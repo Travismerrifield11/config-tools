@@ -1,0 +1,1310 @@
+##############################################################################
+# Upon first boot, you will be prompted for an enable password 
+# Enter the cisco enable password.
+# When asked, press 0 to continue
+##############################################################################
+!
+##############################################################################
+# Start with a blank configuration
+##############################################################################
+!
+write erase
+reload
+!!!! DO NOT SAVE MODIFICATIONS !!!!
+!!!! DO NOT ENTER THE INITIAL CONFIG DIALOG !!!!
+!
+##############################################################################
+# Enable MPLS Features & Upgrade/Downgrade Firmware
+##############################################################################
+!
+!!!!!! insert USB with firmware ir8340-universalk9.17.15.02c.SPA.bin 
+!!!!!! copy and paste one line at a time
+!
+enable
+copy usb0:ir8340-universalk9.17.15.02c.SPA.bin flash:
+!
+#Press Enter again to confirm
+!
+conf t
+boot system flash:ir8340-universalk9.17.15.02c.SPA.bin
+license boot level network-advantage
+end
+write
+reload
+!
+##############################################################################
+# Basic Configuration
+# Copy and paste one section at a time
+##############################################################################
+!
+enable
+cellular 0/4/0 lte profile create 3 ALLIANT.VZWENTP none ipv4v6
+#press enter a few times to confirm. 
+!
+!
+!
+conf t
+hostname insert-hostname
+ip domain name bb.alnt.net
+no service config
+ip ssh time-out 30
+ip ssh logging events
+ip ssh version 2
+ip ssh dscp 16
+crypto key generate rsa modulus 3072
+!
+##############################################################################
+# Loopback0 IP, eigrp router-id and bgp router-id 
+##############################################################################
+!
+interface Loopback0
+ description underlay loopback
+ ip address insert-loopback0 255.255.255.255
+!
+router eigrp underlay
+ !
+ address-family ipv4 unicast autonomous-system 100
+  !
+  af-interface default
+   passive-interface
+  exit-af-interface
+  !
+  topology base
+  exit-af-topology
+  network insert-loopback0 0.0.0.0
+  eigrp router-id insert-loopback0
+  eigrp stub connected
+ exit-address-family
+!
+ip bgp-community new-format
+router bgp 65310.10insert-hubsplice
+ bgp router-id insert-loopback0
+ bgp asnotation dot
+ bgp log-neighbor-changes
+ bgp bestpath cost-community ignore
+ neighbor RR_SERVERS peer-group
+ neighbor RR_SERVERS remote-as 65310.10insert-hubsplice
+ neighbor RR_SERVERS update-source Loopback0
+ neighbor RR_SERVERS timers 5 20
+ neighbor 10.94.17.insert-hubsplice peer-group RR_SERVERS
+ neighbor 10.95.17.insert-hubsplice peer-group RR_SERVERS
+ !
+ address-family ipv4
+  neighbor RR_SERVERS send-community both
+  neighbor RR_SERVERS route-map RR_SERVERS_IN in
+  neighbor 10.94.17.insert-hubsplice activate
+  neighbor 10.95.17.insert-hubsplice activate
+ exit-address-family
+ !
+ address-family vpnv4
+  neighbor RR_SERVERS send-community both
+  neighbor RR_SERVERS route-map RR_SERVERS_IN in
+  neighbor 10.94.17.insert-hubsplice activate
+  neighbor 10.95.17.insert-hubsplice activate
+ exit-address-family
+!
+##############################################################################
+# Management
+##############################################################################
+!
+vrf definition ipl-mgmt
+ rd 65310:1107
+ route-target export 65310:21107
+ route-target import 65310:11107
+ !
+ address-family ipv4
+ exit-address-family
+!
+interface Loopback1
+ description ipl-mgmt loopback
+ vrf forwarding ipl-mgmt
+ ip address insert-loopback1 255.255.255.255
+!
+router bgp 65310.10insert-hubsplice
+ address-family ipv4 vrf ipl-mgmt
+  redistribute connected
+ exit-address-family
+!
+aaa new-model
+aaa group server tacacs+ ali-mgmt
+ server-private 10.80.128.149 key 7 0559360E255B653901172147132534053927230511
+ ip vrf forwarding ipl-mgmt
+ ip tacacs source-interface loopback1
+ntp source loopback1
+ntp server vrf ipl-mgmt 10.80.0.1 prefer
+ntp server vrf ipl-mgmt 10.80.0.2
+!
+logging trap notifications
+logging origin-id hostname
+logging source-interface Loopback1 vrf ipl-mgmt
+logging host 172.28.2.162 vrf ipl-mgmt
+logging host 10.80.128.148 vrf ipl-mgmt
+!
+##############################################################################
+# VRFs
+##############################################################################
+!
+vrf definition fvrf-verizon
+ description Verizon Private Network WAN FVRF
+ address-family ipv4
+ exit-address-family
+
+!toggle-amivrf definition ipl-ami
+ !toggle-amird 65310:1103
+ !toggle-amiroute-target export 65310:21103
+ !toggle-amiroute-target import 65310:11103
+ !toggle-amiaddress-family ipv4
+ !toggle-amiexit-address-family
+
+!toggle-amirouter bgp 65310.10insert-hubsplice
+ !toggle-amiaddress-family ipv4 vrf ipl-ami
+  !toggle-amiredistribute connected
+ !toggle-amiexit-address-family
+
+!toggle-mgmtvrf definition ipl-mgmt
+ !toggle-mgmtrd 65310:1107
+ !toggle-mgmtroute-target export 65310:21107
+ !toggle-mgmtroute-target import 65310:11107
+ !toggle-mgmtaddress-family ipv4
+ !toggle-mgmtexit-address-family
+
+!toggle-mgmtrouter bgp 65310.10insert-hubsplice
+ !toggle-mgmtaddress-family ipv4 vrf ipl-mgmt
+  !toggle-mgmtredistribute connected
+ !toggle-mgmtexit-address-family
+
+!toggle-ipcamvrf definition ipl-ipcam
+ !toggle-ipcamrd 65310:1106
+ !toggle-ipcamroute-target export 65310:21106
+ !toggle-ipcamroute-target import 65310:11106
+ !toggle-ipcamaddress-family ipv4
+ !toggle-ipcamexit-address-family
+
+!toggle-ipcamrouter bgp 65310.10insert-hubsplice
+ !toggle-ipcamaddress-family ipv4 vrf ipl-ipcam
+  !toggle-ipcamredistribute connected
+ !toggle-ipcamexit-address-family
+
+!toggle-fwbbvrf definition ipl-fwbb
+ !toggle-fwbbrd 65310:1104
+ !toggle-fwbbroute-target export 65310:21104
+ !toggle-fwbbroute-target import 65310:11104
+ !toggle-fwbbaddress-family ipv4
+ !toggle-fwbbexit-address-family
+
+!toggle-fwbbrouter bgp 65310.10insert-hubsplice
+ !toggle-fwbbaddress-family ipv4 vrf ipl-fwbb
+  !toggle-fwbbredistribute connected
+  !toggle-fwbbneighbor 172.19.116.XX remote-as 650XX
+  !toggle-fwbbneighbor 172.19.116.XX activate
+ !toggle-fwbbexit-address-family
+
+!toggle-subvrf definition ipl-sub
+ !toggle-subrd 65310:1101
+ !toggle-subroute-target export 65310:21101
+ !toggle-subroute-target import 65310:11101
+ !toggle-subaddress-family ipv4
+ !toggle-subexit-address-family
+
+!toggle-subrouter bgp 65310.10insert-hubsplice
+ !toggle-subaddress-family ipv4 vrf ipl-sub
+  !toggle-subredistribute connected
+ !toggle-subexit-address-family
+
+!toggle-2wrvrf definition ipl-2wr
+ !toggle-2wrrd 65310:1102
+ !toggle-2wrroute-target export 65310:21102
+ !toggle-2wrroute-target import 65310:11102
+ !toggle-2wraddress-family ipv4
+ !toggle-2wrexit-address-family
+
+!toggle-2wrrouter bgp 65310.10insert-hubsplice
+ !toggle-2wraddress-family ipv4 vrf ipl-2wr
+  !toggle-2wrredistribute connected
+ !toggle-2wrexit-address-family
+
+!toggle-gasvrf definition ipl-gas
+ !toggle-gasrd 65310:1105
+ !toggle-gasroute-target export 65310:21105
+ !toggle-gasroute-target import 65310:11105
+ !toggle-gasaddress-family ipv4
+ !toggle-gasexit-address-family
+
+!toggle-gasrouter bgp 65310.10insert-hubsplice
+ !toggle-gasaddress-family ipv4 vrf ipl-gas
+  !toggle-gasredistribute connected
+ !toggle-gasexit-address-family
+
+!toggle-peervrf definition ali-peer-util
+ !toggle-peerrd 65310:1113
+ !toggle-peerroute-target export 65310:21113
+ !toggle-peerroute-target import 65310:11113
+ !toggle-peeraddress-family ipv4
+ !toggle-peerexit-address-family
+
+!toggle-peerrouter bgp 65310.10insert-hubsplice
+ !toggle-peeraddress-family ipv4 vrf ali-peer-util
+  !toggle-peerredistribute connected
+ !toggle-peerexit-address-family
+
+!toggle-secvrf definition ipl-physec
+!toggle-secvrf definition ipl-physec
+ !toggle-secrd 65310:1108
+ !toggle-secroute-target export 65310:21108
+ !toggle-secroute-target import 65310:11108
+ !toggle-secaddress-family ipv4
+ !toggle-secexit-address-family
+
+!toggle-secrouter bgp 65310.10insert-hubsplice
+ !toggle-secaddress-family ipv4 vrf ipl-physec
+  !toggle-secredistribute connected
+ !toggle-secexit-address-family
+!
+##############################################################################
+# Sub Interfaces
+##############################################################################
+!
+!toggle-amiVLAN 53
+!toggle-mgmtVlan 30
+!toggle-ipcamVlan 58
+!toggle-fwbbVlan 56
+!toggle-subVlan 51 
+!toggle-2wrVlan 50
+!toggle-gasVLAN 54
+!toggle-peerVlan 67
+!toggle-secVlan 59
+!
+!toggle-amiinterface Vlan53
+ !toggle-amidescription AMI Gateway 
+ !toggle-amivrf forwarding ipl-ami
+ !toggle-amiip address insert-ami-gateway 255.255.255.240
+ !toggle-amino ip redirects
+ !toggle-amino ip proxy-arp
+ !toggle-amino autostate
+
+!toggle-mgmt interface Vlan30
+ !toggle-mgmt description MGMT Gateway
+ !toggle-mgmt vrf forwarding ipl-mgmt
+ !toggle-mgmt ip address insert-mgmt-gateway 255.255.255.240
+ !toggle-mgmt no ip redirects
+ !toggle-mgmt no ip proxy-arp
+ !toggle-mgmt no autostate 
+
+!toggle-ipcam interface Vlan58
+ !toggle-ipcam description IPCAM Gateway
+ !toggle-ipcam vrf forwarding ipl-ipcam
+ !toggle-ipcam ip address insert-ipcam-gateway 255.255.255.240
+ !toggle-ipcam no ip redirects
+ !toggle-ipcam no ip proxy-arp
+ !toggle-ipcam no autostate
+
+!toggle-fwbb interface Vlan56
+ !toggle-fwbb description Firewall_BB Gateway
+ !toggle-fwbb vrf forwarding ipl-fwbb
+ !toggle-fwbb ip address insert-fwbb-gateway 255.255.255.240
+ !toggle-fwbb no ip redirects
+ !toggle-fwbb no ip proxy-arp
+ !toggle-fwbb no autostate
+
+!toggle-subinterface Vlan51
+ !toggle-subdescription Substation Gateway
+ !toggle-subvrf forwarding ipl-sub
+ !toggle-subip address insert-sub-gateway insert-sub-subnet
+ !toggle-subno ip redirects
+ !toggle-subno ip proxy-arp
+ !toggle-subno autostate
+
+!toggle-2wr interface Vlan50
+ !toggle-2wr description 2WR Gateway
+ !toggle-2wr vrf forwarding ipl-2wr
+ !toggle-2wr ip address insert-2wr-gateway 255.255.255.240
+ !toggle-2wr no ip redirects
+ !toggle-2wr no ip proxy-arp
+ !toggle-2wr no autostate
+
+!toggle-gasinterface Vlan54
+ !toggle-gasdescription Gas Gateway
+ !toggle-gasvrf forwarding ipl-gas
+ !toggle-gasip address insert-gas-gateway 255.255.255.248
+ !toggle-gasno ip redirects
+ !toggle-gasno ip proxy-arp
+ !toggle-gasno autostate
+
+!toggle-peer interface Vlan67
+ !toggle-peer description PEER_UTILITY Gateway
+ !toggle-peer vrf forwarding ipl-peer-util
+ !toggle-peer ip address insert-peer-gateway 255.255.255.248
+ !toggle-peer no ip redirects
+ !toggle-peer no ip proxy-arp
+ !toggle-peer no autostate
+
+!toggle-sec interface Vlan59
+ !toggle-sec description PHYSICAL_SECURITY Gateway
+ !toggle-sec vrf forwarding ipl-physec
+ !toggle-sec ip address insert-sec-gateway 255.255.255.240
+ !toggle-sec no ip redirects
+ !toggle-sec no ip proxy-arp
+ !toggle-sec no autostate
+!
+##############################################################################
+# Ports
+##############################################################################
+!
+interface GigabitEthernet0/1/0
+ !toggle-gi0 description insert-gi0-desc
+ !toggle-gi0 switchport mode access
+ !toggle-gi0 switchport access VLAN !gi0-network
+!gi0-shut
+!
+interface GigabitEthernet0/1/1
+ !toggle-gi1 description insert-gi1-desc
+ !toggle-gi1 switchport mode access
+ !toggle-gi1 switchport access VLAN !gi1-network
+!gi1-shut
+!
+interface GigabitEthernet0/1/2
+ !toggle-gi2 description insert-gi2-desc
+ !toggle-gi2 switchport mode access
+ !toggle-gi2 switchport access VLAN !gi2-network
+!gi2-shut
+!
+interface GigabitEthernet0/1/3
+ !toggle-gi3 description insert-gi3-desc
+ !toggle-gi3 switchport mode access
+ !toggle-gi3 switchport access VLAN !gi3-network
+!gi3-shut
+!
+interface GigabitEthernet0/1/4
+ !toggle-gi4 description insert-gi4-desc
+ !toggle-gi4 switchport mode access
+ !toggle-gi4 switchport access VLAN !gi4-network
+ !toggle-gi4 media-type !gi4-mediatype
+!gi4-shut
+!
+interface GigabitEthernet0/1/5
+ !toggle-gi5 description insert-gi5-desc
+ !toggle-gi5 switchport mode access
+ !toggle-gi5 switchport access VLAN !gi5-network
+ !toggle-gi5 media-type !gi5-mediatype
+!gi5-shut
+!
+interface GigabitEthernet0/1/6
+ !toggle-gi6 description insert-gi6-desc
+ !toggle-gi6 switchport mode access
+ !toggle-gi6 switchport access VLAN !gi6-network
+ !toggle-gi6 media-type !gi6-mediatype
+!gi6-shut
+!
+interface GigabitEthernet0/1/7
+ !toggle-gi7 description insert-gi7-desc
+ !toggle-gi7 switchport mode access
+ !toggle-gi7 switchport access VLAN !gi7-network
+ !toggle-gi7 media-type !gi7-mediatype
+!gi7-shut
+!
+interface GigabitEthernet0/1/8
+ !toggle-gi8 description insert-gi8-desc
+ !toggle-gi8 switchport mode access
+ !toggle-gi8 switchport access VLAN !gi8-network
+!gi8-shut
+!
+interface GigabitEthernet0/1/9
+ !toggle-gi9 description insert-gi9-desc
+ !toggle-gi9 switchport mode access
+ !toggle-gi9 switchport access VLAN !gi9-network
+!gi9-shut
+!
+interface GigabitEthernet0/1/10
+ !toggle-gi10 description insert-gi10-desc
+ !toggle-gi10 switchport mode access
+ !toggle-gi10 switchport access VLAN !gi10-network
+!gi10-shut
+!
+interface GigabitEthernet0/1/11
+ !toggle-gi11 description insert-gi11-desc
+ !toggle-gi11 switchport mode access
+ !toggle-gi11 switchport access VLAN !gi11-network
+!gi11-shut
+!
+interface cellular 0/4/1
+shut
+interface gi 0/0/0
+shut
+interface gi 0/0/1
+shut
+!
+##############################################################################
+# Auth and Timing
+##############################################################################
+!
+no service pad
+no service finger
+service tcp-keepalives-in
+service tcp-keepalives-out
+service timestamps debug datetime msec localtime show-timezone year
+service timestamps log datetime msec localtime show-timezone year
+service password-encryption
+service sequence-numbers
+service counters max age 40
+no service dhcp
+!
+logging userinfo
+logging buffered 51200 debugging
+logging rate-limit 1 except notifications
+logging console critical
+enable secret 5 $1$9OLx$WICXM747focFEKWCwcNzF0
+!
+username backbone secret 5 $1$rc3u$Wv2gWIi8Naj4p0bJepQ/t1
+aaa authentication login default group ali-mgmt local-case
+aaa authentication login NOAUTH none
+aaa authentication enable default enable
+aaa authorization console
+aaa authorization exec default group ali-mgmt if-authenticated
+aaa accounting send stop-record authentication failure
+aaa accounting nested
+aaa accounting exec default
+ action-type start-stop
+ group ali-mgmt
+aaa accounting commands 1 default
+ action-type start-stop
+ group ali-mgmt
+aaa accounting commands 15 default
+ action-type start-stop
+ group ali-mgmt
+aaa accounting connection default
+ action-type stop-only
+ group ali-mgmt
+aaa session-id common
+!
+clock timezone CST -6 0
+clock summer-time CDT recurring
+no ip source-route
+no ip gratuitous-arps
+ip dhcp bootp ignore
+no ip bootp server
+no ip domain lookup
+login on-failure log
+login on-success log
+mpls ldp explicit-null
+lldp run
+ip telnet source-interface loopback 1
+no ip http server
+no ip http secure-server
+!
+##############################################################################
+# QOS
+##############################################################################
+!
+ip access-list extended ISAKMP
+ permit udp any eq isakmp any eq isakmp
+!
+class-map match-any REALTIME
+ match dscp ef
+ match dscp cs5
+ match dscp cs4
+class-map match-any CRITICAL-DATA
+ match dscp af41  af42  af43
+ match dscp af31  af32  af33
+ match dscp af21  af22  af23
+ match dscp af11  af12  af13
+class-map match-any CONTROL
+ match dscp cs6
+ match dscp cs3
+ match dscp cs2
+ match access-group name ISAKMP
+!
+policy-map WAN-EDGE-4-CLASS
+ class REALTIME
+  priority percent 33
+ class CONTROL
+  bandwidth percent 7
+  queue-limit 128 packets
+ class CRITICAL-DATA
+  bandwidth percent 35
+  fair-queue
+  random-detect dscp-based
+  random-detect dscp 10 50 64
+  random-detect dscp 12 45 64
+  random-detect dscp 14 40 64
+  random-detect dscp 18 50 64
+  random-detect dscp 20 45 64
+  random-detect dscp 22 40 64
+  random-detect dscp 26 50 64
+  random-detect dscp 28 45 64
+  random-detect dscp 30 40 64
+  random-detect dscp 34 50 64
+  random-detect dscp 36 45 64
+  random-detect dscp 38 40 64
+ class class-default
+  bandwidth percent 25
+  fair-queue
+  queue-limit 128 packets
+  random-detect dscp-based
+  random-detect dscp 0 100 128
+  random-detect dscp 8 60 100
+policy-map WAN-EDGE-4-CLASS-SHAPED
+ class class-default
+  shape average percent 100
+   service-policy WAN-EDGE-4-CLASS
+!
+##############################################################################
+# Crypto
+##############################################################################
+!
+crypto isakmp invalid-spi-recovery
+crypto ikev2 authorization policy IKEV2_POLICY
+ no route accept
+crypto ikev2 proposal IKEV2_PROPOSAL
+ encryption aes-cbc-256
+ integrity sha512
+ group 21
+crypto ikev2 policy IKEV2_POLICY
+ match fvrf any
+ proposal IKEV2_PROPOSAL
+crypto ikev2 keyring IKEV2_KEYRING
+ peer ALL
+  address 0.0.0.0 0.0.0.0
+  pre-shared-key BONViIkyFXwSUyQj1mJ537lOiwxC3Jfq
+crypto ikev2 profile IKEV2_PROFILE_VERIZON
+ match fvrf fvrf-verizon
+ match identity remote any
+ authentication remote pre-share
+ authentication local pre-share
+ keyring local IKEV2_KEYRING
+ dpd 10 2 periodic
+ initial-contact force
+crypto ipsec transform-set IPSEC_TRANSFORM esp-aes 256 esp-sha-hmac
+ mode transport
+crypto ipsec profile IPSEC_PROFILE_VERIZON
+ set security-association lifetime kilobytes disable
+ set security-association lifetime seconds 7200
+ set security-association replay window-size 512
+ set transform-set IPSEC_TRANSFORM
+ set pfs group21
+ set ikev2-profile IKEV2_PROFILE_VERIZON
+!
+no crypto ikev2 authorization policy default
+no crypto ikev2 policy default
+no crypto ikev2 proposal default
+no crypto ipsec transform-set default
+no crypto ipsec profile default
+!
+ip community-list standard RTBH permit 65535:666
+ip ftp source-interface loopback1
+ip tftp source-interface loopback1
+ip route 192.0.2.1 255.255.255.255 Null0
+!
+route-map RR_SERVERS_IN permit 10
+ description Remotely Triggered Black Hole
+ match community RTBH
+ set ip next-hop 192.0.2.1
+!
+route-map RR_SERVERS_IN permit 20
+ description Allow everything else
+!
+ip access-list standard SNMP-NMS
+ permit 10.80.128.91
+ permit 10.80.128.92
+ permit 10.80.128.93
+ deny   any log
+!
+##############################################################################
+# Banner & SNMP
+##############################################################################
+!
+snmp-server view NMS iso included
+snmp-server community fYl8mxQlMmgIRXk view NMS RO SNMP-NMS
+snmp-server location insert-city, insert-state | insert-location_type
+snmp-server ifindex persist
+snmp-server ip dscp 16
+snmp-server contact DL_IT_Telecom_Analyst@alliantenergy.com
+snmp ifmib ifalias long
+snmp ifmib trap throttle
+mpls ldp router-id Loopback0
+!
+banner exec ^
+Welcome. You have logged in to $(hostname).$(domain)
+^
+banner login ^
+***************************************************************
+
+  THIS SYSTEM IS PROVIDED FOR USE BY AUTHORIZED USERS ONLY.  
+  UNAUTHORIZED USE PROHIBITED. VIOLATORS WILL BE PROSECUTED. 
+
+***************************************************************
+^
+multilink bundle-name authenticated
+cts logging verbose
+redundancy
+line con 0
+ transport preferred none
+ stopbits 1
+line vty 0 15
+ session-timeout 30 
+ access-class vtyaccess in vrf-also
+ exec-timeout 30 0
+ privilege level 0
+ transport preferred none
+ transport input ssh
+!
+##############################################################################
+# Verizon Cellular Config
+##############################################################################
+!
+controller Cellular 0/4/0
+ lte sim data-profile 3 attach-profile 1 slot 0
+ description Verizon
+!
+default interface cellular 0/4/0
+interface Cellular0/4/0
+ vrf forwarding fvrf-verizon
+ ip address negotiated
+ ip tcp adjust-mss 1300
+ dialer in-band
+ dialer watch-group 1
+ pulse-time 1 
+ no shutdown
+!
+interface Cellular0/4/1
+shutdown
+!
+ip route vrf fvrf-verizon 0.0.0.0 0.0.0.0 Cellular0/4/0
+dialer-list 1 protocol ip permit
+dialer watch-list 1 ip 198.51.100.0 255.255.255.255
+dialer watch-list 1 delay connect 1
+dialer watch-list 1 delay route-check initial 60
+!
+interface Tunnel3001
+ description VERIZON:wimdsngodc-tel-drtinsert-hubsplice
+ bandwidth 10000
+ ip unnumbered Loopback0
+ delay 3000
+ mpls mtu max
+ mpls ip
+ tunnel source Cellular0/4/0
+ tunnel destination 10.94.18.insert-hubsplice
+ tunnel key 3001
+ tunnel path-mtu-discovery
+ tunnel vrf fvrf-verizon
+ tunnel protection ipsec profile IPSEC_PROFILE_VERIZON shared
+!
+interface Tunnel3002
+ description VERIZON:iacdrrgo-tel-drtinsert-hubsplice
+ bandwidth 10000
+ ip unnumbered Loopback0
+ delay 3000
+ mpls mtu max
+ mpls ip
+ tunnel source Cellular0/4/0
+ tunnel destination 10.95.18.insert-hubsplice
+ tunnel key 3002
+ tunnel path-mtu-discovery
+ tunnel vrf fvrf-verizon
+ tunnel protection ipsec profile IPSEC_PROFILE_VERIZON shared
+!
+router eigrp underlay
+ !
+ address-family ipv4 unicast autonomous-system 100
+  !
+  af-interface Tunnel3001
+   no passive-interface
+  exit-af-interface
+  !
+  af-interface Tunnel3002
+   no passive-interface
+  exit-af-interface
+  !
+ exit-address-family
+!
+##############################################################################
+# WAN Config
+##############################################################################
+!toggle-wan-Aureon vrf definition fvrf-aureon
+ !toggle-wan-Aureon address-family ipv4
+ !toggle-wan-Aureon exit-address-family
+!toggle-wan-Aureon crypto ikev2 profile IKEV2_PROFILE_AUREON
+ !toggle-wan-Aureon match fvrf fvrf-aureon
+ !toggle-wan-Aureon match identity remote any
+ !toggle-wan-Aureon authentication remote pre-share
+ !toggle-wan-Aureon authentication local pre-share
+ !toggle-wan-Aureon keyring local IKEV2_KEYRING
+ !toggle-wan-Aureon dpd 10 2 periodic
+ !toggle-wan-Aureon initial-contact force
+!toggle-wan-Aureon crypto ipsec profile IPSEC_PROFILE_AUREON
+ !toggle-wan-Aureon set security-association lifetime kilobytes disable
+ !toggle-wan-Aureon set security-association lifetime seconds 7200
+ !toggle-wan-Aureon set security-association replay window-size 512
+ !toggle-wan-Aureon set transform-set IPSEC_TRANSFORM
+ !toggle-wan-Aureon set pfs group21
+ !toggle-wan-Aureon set ikev2-profile IKEV2_PROFILE_AUREON
+!toggle-wan-Aureon interface insert-wan-port.2443
+ !toggle-wan-Aureon description AUREON | Circuit ID: insert-circuit-id
+ !toggle-wan-Aureon encapsulation dot1Q 2443
+ !toggle-wan-Aureon vrf forwarding fvrf-aureon
+ !toggle-wan-Aureon ip address insert-wan-ip 255.255.255.0
+ !toggle-wan-Aureon no shutdown
+!toggle-wan-Aureon ip route vrf fvrf-aureon 10.94.18.0 255.255.255.0 172.24.53.1
+!toggle-wan-Aureon ip route vrf fvrf-aureon 10.95.18.0 255.255.255.0 172.24.53.2
+!toggle-wan-Aureon interface Tunnel1011
+ !toggle-wan-Aureon description AUREON:wimdsngodc-tel-drtinsert-hubsplice
+ !toggle-wan-Aureon bandwidth insert-bandwidth
+ !toggle-wan-Aureon ip unnumbered Loopback0
+ !toggle-wan-Aureon delay 1200
+ !toggle-wan-Aureon mpls mtu max
+ !toggle-wan-Aureon mpls ip
+ !toggle-wan-Aureon tunnel source insert-wan-port.2443
+ !toggle-wan-Aureon tunnel destination 10.94.18.insert-hubsplice
+ !toggle-wan-Aureon tunnel key 1011
+ !toggle-wan-Aureon tunnel path-mtu-discovery
+ !toggle-wan-Aureon tunnel vrf fvrf-aureon
+ !toggle-wan-Aureon tunnel protection ipsec profile IPSEC_PROFILE_AUREON shared
+!toggle-wan-Aureon interface Tunnel1012
+ !toggle-wan-Aureon description AUREON:iacdrrgo-tel-drtinsert-hubsplice
+ !toggle-wan-Aureon bandwidth insert-bandwidth
+ !toggle-wan-Aureon ip unnumbered Loopback0
+ !toggle-wan-Aureon delay 1200
+ !toggle-wan-Aureon mpls mtu max
+ !toggle-wan-Aureon mpls ip
+ !toggle-wan-Aureon tunnel source insert-wan-port.2443
+ !toggle-wan-Aureon tunnel destination 10.95.18.insert-hubsplice
+ !toggle-wan-Aureon tunnel key 1012
+ !toggle-wan-Aureon tunnel path-mtu-discovery
+ !toggle-wan-Aureon tunnel vrf fvrf-aureon
+ !toggle-wan-Aureon tunnel protection ipsec profile IPSEC_PROFILE_AUREON shared
+!toggle-wan-Aureon router eigrp underlay
+ !toggle-wan-Aureon address-family ipv4 unicast autonomous-system 100
+  !toggle-wan-Aureon af-interface Tunnel1011
+   !toggle-wan-Aureon no passive-interface
+  !toggle-wan-Aureon exit-af-interface
+  !toggle-wan-Aureon af-interface Tunnel1012
+   !toggle-wan-Aureon no passive-interface
+  !toggle-wan-Aureon exit-af-interface
+ !toggle-wan-Aureon exit-address-family
+!toggle-wan-Aureon interface insert-wan-port 
+ !toggle-wan-Aureon bandwidth insert-bandwidth
+ !toggle-wan-Aureon no ip address
+ !toggle-wan-Aureon media-type insert-wan-media
+ !toggle-wan-Aureon no shut
+!toggle-wan-CenturyLink vrf definition fvrf-wan-CenturyLink
+ !toggle-wan-CenturyLink address-family ipv4
+ !toggle-wan-CenturyLink exit-address-family
+!toggle-wan-CenturyLink crypto ikev2 profile IKEV2_PROFILE_CENTURYLINK
+ !toggle-wan-CenturyLink match fvrf fvrf-wan-CenturyLink
+ !toggle-wan-CenturyLink match identity remote any
+ !toggle-wan-CenturyLink authentication remote pre-share
+ !toggle-wan-CenturyLink authentication local pre-share
+ !toggle-wan-CenturyLink keyring local IKEV2_KEYRING
+ !toggle-wan-CenturyLink dpd 10 2 periodic
+ !toggle-wan-CenturyLink initial-contact force
+!toggle-wan-CenturyLink crypto ipsec profile IPSEC_PROFILE_CENTURYLINK
+ !toggle-wan-CenturyLink set security-association lifetime kilobytes disable
+ !toggle-wan-CenturyLink set security-association lifetime seconds 7200
+ !toggle-wan-CenturyLink set security-association replay window-size 512
+ !toggle-wan-CenturyLink set transform-set IPSEC_TRANSFORM
+ !toggle-wan-CenturyLink set pfs group21
+ !toggle-wan-CenturyLink set ikev2-profile IKEV2_PROFILE_CENTURYLINK
+!toggle-wan-CenturyLink interface insert-wan-port
+ !toggle-wan-CenturyLink description CENTURYLINK | Circuit ID: insert-circuit-id
+ !toggle-wan-CenturyLink vrf forwarding fvrf-wan-CenturyLink
+ !toggle-wan-CenturyLink ip address insert-wan-ip 255.255.255.0
+ !toggle-wan-CenturyLink no shutdown
+!toggle-wan-CenturyLink ip route vrf fvrf-wan-CenturyLink 10.94.18.0 255.255.255.0 172.30.60.1
+!toggle-wan-CenturyLink ip route vrf fvrf-wan-CenturyLink 10.95.18.0 255.255.255.0 172.30.60.2
+!toggle-wan-CenturyLink interface Tunnel1021
+ !toggle-wan-CenturyLink description CENTURYLINK:wimdsngodc-tel-drtinsert-hubsplice
+ !toggle-wan-CenturyLink bandwidth insert-bandwidth
+ !toggle-wan-CenturyLink ip unnumbered Loopback0
+ !toggle-wan-CenturyLink delay 1300
+ !toggle-wan-CenturyLink mpls mtu max
+ !toggle-wan-CenturyLink mpls ip
+ !toggle-wan-CenturyLink tunnel source insert-wan-port
+ !toggle-wan-CenturyLink tunnel destination 10.94.18.insert-hubsplice
+ !toggle-wan-CenturyLink tunnel key 1021
+ !toggle-wan-CenturyLink tunnel path-mtu-discovery
+ !toggle-wan-CenturyLink tunnel vrf fvrf-wan-CenturyLink
+ !toggle-wan-CenturyLink tunnel protection ipsec profile IPSEC_PROFILE_CENTURYLINK shared
+!toggle-wan-CenturyLink interface Tunnel1022
+ !toggle-wan-CenturyLink description CENTURYLINK:iacdrrgo-tel-drtinsert-hubsplice
+ !toggle-wan-CenturyLink bandwidth insert-bandwidth
+ !toggle-wan-CenturyLink ip unnumbered Loopback0
+ !toggle-wan-CenturyLink delay 1300
+ !toggle-wan-CenturyLink mpls mtu max
+ !toggle-wan-CenturyLink mpls ip
+ !toggle-wan-CenturyLink tunnel source insert-wan-port
+ !toggle-wan-CenturyLink tunnel destination 10.95.18.insert-hubsplice
+ !toggle-wan-CenturyLink tunnel key 1022
+ !toggle-wan-CenturyLink tunnel path-mtu-discovery
+ !toggle-wan-CenturyLink tunnel vrf fvrf-wan-CenturyLink
+ !toggle-wan-CenturyLink tunnel protection ipsec profile IPSEC_PROFILE_CENTURYLINK shared
+!toggle-wan-CenturyLink router eigrp underlay
+ !toggle-wan-CenturyLink address-family ipv4 unicast autonomous-system 100
+  !toggle-wan-CenturyLink af-interface Tunnel1021
+   !toggle-wan-CenturyLink no passive-interface
+  !toggle-wan-CenturyLink exit-af-interface
+  !toggle-wan-CenturyLink af-interface Tunnel1022
+   !toggle-wan-CenturyLink no passive-interface
+  !toggle-wan-CenturyLink exit-af-interface
+ !toggle-wan-CenturyLink exit-address-family
+!toggle-wan-Charter vrf definition fvrf-wan-Charter
+ !toggle-wan-Charter address-family ipv4
+ !toggle-wan-Charter exit-address-family
+!toggle-wan-Charter crypto ikev2 profile IKEV2_PROFILE_CHARTER
+ !toggle-wan-Charter match fvrf fvrf-wan-Charter
+ !toggle-wan-Charter match identity remote any
+ !toggle-wan-Charter authentication remote pre-share
+ !toggle-wan-Charter authentication local pre-share
+ !toggle-wan-Charter keyring local IKEV2_KEYRING
+ !toggle-wan-Charter dpd 10 2 periodic
+ !toggle-wan-Charter initial-contact force
+!toggle-wan-Charter crypto ipsec profile IPSEC_PROFILE_CHARTER
+ !toggle-wan-Charter set security-association lifetime kilobytes disable
+ !toggle-wan-Charter set security-association lifetime seconds 7200
+ !toggle-wan-Charter set security-association replay window-size 512
+ !toggle-wan-Charter set transform-set IPSEC_TRANSFORM
+ !toggle-wan-Charter set pfs group21
+ !toggle-wan-Charter set ikev2-profile IKEV2_PROFILE_CHARTER
+!toggle-wan-Charter interface insert-wan-port.2401
+ !toggle-wan-Charter no cdp enable
+!toggle-wan-Charter interface insert-wan-port.2401
+ !toggle-wan-Charter description CHARTER | Circuit ID: insert-circuit-id
+ !toggle-wan-Charter encapsulation dot1Q 2401
+ !toggle-wan-Charter vrf forwarding fvrf-wan-Charter
+ !toggle-wan-Charter ip address insert-wan-ip 255.255.255.0
+ !toggle-wan-Charter no cdp enable
+!toggle-wan-Charter ip route vrf fvrf-wan-Charter 10.94.18.0 255.255.255.0 172.30.61.1
+!toggle-wan-Charter ip route vrf fvrf-wan-Charter 10.95.18.0 255.255.255.0 172.30.61.2
+!toggle-wan-Charter interface Tunnel1031
+ !toggle-wan-Charter description CHARTER:wimdsngodc-tel-drtinsert-hubsplice
+ !toggle-wan-Charter bandwidth insert-bandwidth
+ !toggle-wan-Charter ip unnumbered Loopback0
+ !toggle-wan-Charter delay 1000
+ !toggle-wan-Charter mpls mtu max
+ !toggle-wan-Charter mpls ip
+ !toggle-wan-Charter tunnel source insert-wan-port.2401
+ !toggle-wan-Charter tunnel destination 10.94.18.insert-hubsplice
+ !toggle-wan-Charter tunnel key 1031
+ !toggle-wan-Charter tunnel path-mtu-discovery
+ !toggle-wan-Charter tunnel vrf fvrf-wan-Charter
+ !toggle-wan-Charter tunnel protection ipsec profile IPSEC_PROFILE_CHARTER shared
+!toggle-wan-Charter interface Tunnel1032
+ !toggle-wan-Charter description CHARTER:iacdrrgo-tel-drtinsert-hubsplice
+ !toggle-wan-Charter bandwidth insert-bandwidth
+ !toggle-wan-Charter ip unnumbered Loopback0
+ !toggle-wan-Charter delay 1000
+ !toggle-wan-Charter mpls mtu max
+ !toggle-wan-Charter mpls ip
+ !toggle-wan-Charter tunnel source insert-wan-port.2401
+ !toggle-wan-Charter tunnel destination 10.95.18.insert-hubsplice
+ !toggle-wan-Charter tunnel key 1032
+ !toggle-wan-Charter tunnel path-mtu-discovery
+ !toggle-wan-Charter tunnel vrf fvrf-wan-Charter
+ !toggle-wan-Charter tunnel protection ipsec profile IPSEC_PROFILE_CHARTER shared
+!toggle-wan-Charter router eigrp underlay
+ !toggle-wan-Charter address-family ipv4 unicast autonomous-system 100
+  !toggle-wan-Charter af-interface Tunnel1031
+   !toggle-wan-Charter no passive-interface
+  !toggle-wan-Charter exit-af-interface
+  !toggle-wan-Charter af-interface Tunnel1032
+   !toggle-wan-Charter no passive-interface
+  !toggle-wan-Charter exit-af-interface
+ !toggle-wan-Charter exit-address-family
+!toggle-wan-Charter interface insert-wan-port 
+ !toggle-wan-Charter bandwidth insert-bandwidth
+ !toggle-wan-Charter no ip address
+ !toggle-wan-Charter media-type insert-wan-media
+ !toggle-wan-Charter no shut
+!toggle-wan-North vrf definition fvrf-mw-wan-North
+ !toggle-wan-North address-family ipv4
+ !toggle-wan-North exit-address-family
+!toggle-wan-North crypto ikev2 profile IKEV2_PROFILE_MW_NORTH
+ !toggle-wan-North match fvrf fvrf-mw-wan-North
+ !toggle-wan-North match identity remote any
+ !toggle-wan-North authentication remote pre-share
+ !toggle-wan-North authentication local pre-share
+ !toggle-wan-North keyring local IKEV2_KEYRING
+ !toggle-wan-North dpd 10 2 periodic
+ !toggle-wan-North initial-contact force
+!toggle-wan-North crypto ipsec profile IPSEC_PROFILE_MW_NORTH
+ !toggle-wan-North set security-association lifetime kilobytes disable
+ !toggle-wan-North set security-association lifetime seconds 7200
+ !toggle-wan-North set security-association replay window-size 512
+ !toggle-wan-North set transform-set IPSEC_TRANSFORM
+ !toggle-wan-North set pfs group21
+ !toggle-wan-North set ikev2-profile IKEV2_PROFILE_MW_NORTH
+!toggle-wan-North interface insert-wan-port.2411
+ !toggle-wan-North description MW-wan-North
+ !toggle-wan-North encapsulation dot1Q 2411
+ !toggle-wan-North vrf forwarding fvrf-mw-wan-North
+ !toggle-wan-North ip address insert-wan-ip 255.255.255.128
+!toggle-wan-North ip route vrf fvrf-mw-wan-North 10.94.18.0 255.255.255.0 172.30.56.121
+!toggle-wan-North ip route vrf fvrf-mw-wan-North 10.95.18.0 255.255.255.0 172.30.56.122
+!toggle-wan-North interface Tunnel2001
+ !toggle-wan-North description MW-wan-North:wimdsngodc-tel-drtinsert-hubsplice
+ !toggle-wan-North bandwidth insert-bandwidth
+ !toggle-wan-North ip unnumbered Loopback0
+ !toggle-wan-North delay 2000
+ !toggle-wan-North mpls mtu max
+ !toggle-wan-North mpls ip
+ !toggle-wan-North tunnel source insert-wan-port.2411
+ !toggle-wan-North tunnel destination 10.94.18.insert-hubsplice
+ !toggle-wan-North tunnel key 2001
+ !toggle-wan-North tunnel path-mtu-discovery
+ !toggle-wan-North tunnel vrf fvrf-mw-wan-North
+ !toggle-wan-North tunnel protection ipsec profile IPSEC_PROFILE_MW_NORTH shared
+!toggle-wan-North interface Tunnel2002
+ !toggle-wan-North description MW-wan-North:iacdrrgo-tel-drtinsert-hubsplice
+ !toggle-wan-North bandwidth insert-bandwidth
+ !toggle-wan-North ip unnumbered Loopback0
+ !toggle-wan-North delay 2000
+ !toggle-wan-North mpls mtu max
+ !toggle-wan-North mpls ip
+ !toggle-wan-North tunnel source insert-wan-port.2411
+ !toggle-wan-North tunnel destination 10.95.18.insert-hubsplice
+ !toggle-wan-North tunnel key 2002
+ !toggle-wan-North tunnel path-mtu-discovery
+ !toggle-wan-North tunnel vrf fvrf-mw-wan-North
+ !toggle-wan-North tunnel protection ipsec profile IPSEC_PROFILE_MW_NORTH shared
+!toggle-wan-North router eigrp underlay
+ !toggle-wan-North address-family ipv4 unicast autonomous-system 100
+  !toggle-wan-North af-interface Tunnel2001
+   !toggle-wan-North no passive-interface
+  !toggle-wan-North exit-af-interface
+  !toggle-wan-North af-interface Tunnel2002
+   !toggle-wan-North no passive-interface
+  !toggle-wan-North exit-af-interface
+ !toggle-wan-North exit-address-family
+!toggle-wan-North interface insert-wan-port 
+ !toggle-wan-North bandwidth insert-bandwidth
+ !toggle-wan-North no ip address
+ !toggle-wan-North media-type insert-wan-media
+ !toggle-wan-North no shut
+!toggle-wan-West vrf definition fvrf-mw-wan-West
+ !toggle-wan-West address-family ipv4
+ !toggle-wan-West exit-address-family
+!toggle-wan-West crypto ikev2 profile IKEV2_PROFILE_MW_WEST
+ !toggle-wan-West match fvrf fvrf-mw-wan-West
+ !toggle-wan-West match identity remote any
+ !toggle-wan-West authentication remote pre-share
+ !toggle-wan-West authentication local pre-share
+ !toggle-wan-West keyring local IKEV2_KEYRING
+ !toggle-wan-West dpd 10 2 periodic
+ !toggle-wan-West initial-contact force
+!toggle-wan-West crypto ipsec profile IPSEC_PROFILE_MW_WEST
+ !toggle-wan-West set security-association lifetime kilobytes disable
+ !toggle-wan-West set security-association lifetime seconds 7200
+ !toggle-wan-West set security-association replay window-size 512
+ !toggle-wan-West set transform-set IPSEC_TRANSFORM
+ !toggle-wan-West set pfs group21
+ !toggle-wan-West set ikev2-profile IKEV2_PROFILE_MW_WEST
+!toggle-wan-West interface insert-wan-port.2412
+ !toggle-wan-West description MW-wan-West
+ !toggle-wan-West encapsulation dot1Q 2412
+ !toggle-wan-West vrf forwarding fvrf-mw-wan-West
+ !toggle-wan-West ip address insert-wan-ip 255.255.255.128
+!toggle-wan-West ip route vrf fvrf-mw-wan-West 10.94.18.0 255.255.255.0 172.30.56.245
+!toggle-wan-West ip route vrf fvrf-mw-wan-West 10.95.18.0 255.255.255.0 172.30.56.246
+!toggle-wan-West interface Tunnel2011
+ !toggle-wan-West description MW-wan-West:wimdsngodc-tel-drtinsert-hubsplice
+ !toggle-wan-West bandwidth insert-bandwidth
+ !toggle-wan-West ip unnumbered Loopback0
+ !toggle-wan-West delay 2100
+ !toggle-wan-West mpls mtu max
+ !toggle-wan-West mpls ip
+ !toggle-wan-West tunnel source insert-wan-port.2412
+ !toggle-wan-West tunnel destination 10.94.18.insert-hubsplice
+ !toggle-wan-West tunnel key 2011
+ !toggle-wan-West tunnel path-mtu-discovery
+ !toggle-wan-West tunnel vrf fvrf-mw-wan-West
+ !toggle-wan-West tunnel protection ipsec profile IPSEC_PROFILE_MW_WEST shared
+!toggle-wan-West interface Tunnel2012
+ !toggle-wan-West description MW-wan-West:iacdrrgo-tel-drtinsert-hubsplice
+ !toggle-wan-West bandwidth insert-bandwidth
+ !toggle-wan-West ip unnumbered Loopback0
+ !toggle-wan-West delay 2100
+ !toggle-wan-West mpls mtu max
+ !toggle-wan-West mpls ip
+ !toggle-wan-West tunnel source insert-wan-port.2412
+ !toggle-wan-West tunnel destination 10.95.18.insert-hubsplice
+ !toggle-wan-West tunnel key 2012
+ !toggle-wan-West tunnel path-mtu-discovery
+ !toggle-wan-West tunnel vrf fvrf-mw-wan-West
+ !toggle-wan-West tunnel protection ipsec profile IPSEC_PROFILE_MW_WEST shared
+!toggle-wan-West router eigrp underlay
+ !toggle-wan-West address-family ipv4 unicast autonomous-system 100
+  !toggle-wan-West af-interface Tunnel2011
+   !toggle-wan-West no passive-interface
+  !toggle-wan-West exit-af-interface
+  !toggle-wan-West af-interface Tunnel2012
+   !toggle-wan-West no passive-interface
+  !toggle-wan-West exit-af-interface
+ !toggle-wan-West exit-address-family
+!toggle-wan-Westinterface insert-wan-port 
+ !toggle-wan-Westbandwidth insert-bandwidth
+ !toggle-wan-Westno ip address
+ !toggle-wan-Westmedia-type insert-wan-media
+ !toggle-wan-Westno shut
+!toggle-wan-Central vrf definition fvrf-mw-wan-Central
+ !toggle-wan-Central address-family ipv4
+ !toggle-wan-Central exit-address-family
+!toggle-wan-Central crypto ikev2 profile IKEV2_PROFILE_MW_CENTRAL
+ !toggle-wan-Central match fvrf fvrf-mw-wan-Central
+ !toggle-wan-Central match identity remote any
+ !toggle-wan-Central authentication remote pre-share
+ !toggle-wan-Central authentication local pre-share
+ !toggle-wan-Central keyring local IKEV2_KEYRING
+ !toggle-wan-Central dpd 10 2 periodic
+ !toggle-wan-Central initial-contact force
+!toggle-wan-Central crypto ipsec profile IPSEC_PROFILE_MW_CENTRAL
+ !toggle-wan-Central set security-association lifetime kilobytes disable
+ !toggle-wan-Central set security-association lifetime seconds 7200
+ !toggle-wan-Central set security-association replay window-size 512
+ !toggle-wan-Central set transform-set IPSEC_TRANSFORM
+ !toggle-wan-Central set pfs group21
+ !toggle-wan-Central set ikev2-profile IKEV2_PROFILE_MW_CENTRAL
+!toggle-wan-Central interface insert-wan-port.2413
+ !toggle-wan-Central description MW-wan-Central
+ !toggle-wan-Central encapsulation dot1Q 2413
+ !toggle-wan-Central vrf forwarding fvrf-mw-wan-Central
+ !toggle-wan-Central ip address insert-wan-ip 255.255.255.192
+!toggle-wan-Central ip route vrf fvrf-mw-wan-Central 10.94.18.0 255.255.255.0 172.30.57.53
+!toggle-wan-Central ip route vrf fvrf-mw-wan-Central 10.95.18.0 255.255.255.0 172.30.57.54
+!toggle-wan-Central interface Tunnel2021
+ !toggle-wan-Central description MW-wan-Central:wimdsngodc-tel-drtinsert-hubsplice
+ !toggle-wan-Central bandwidth insert-bandwidth
+ !toggle-wan-Central ip unnumbered Loopback0
+ !toggle-wan-Central delay 2200
+ !toggle-wan-Central mpls mtu max
+ !toggle-wan-Central mpls ip
+ !toggle-wan-Central tunnel source insert-wan-port.2413
+ !toggle-wan-Central tunnel destination 10.94.18.insert-hubsplice
+ !toggle-wan-Central tunnel key 2021
+ !toggle-wan-Central tunnel path-mtu-discovery
+ !toggle-wan-Central tunnel vrf fvrf-mw-wan-Central
+ !toggle-wan-Central tunnel protection ipsec profile IPSEC_PROFILE_MW_CENTRAL shared
+!toggle-wan-Central interface Tunnel2022
+ !toggle-wan-Central description MW-wan-Central:iacdrrgo-tel-drtinsert-hubsplice
+ !toggle-wan-Central bandwidth insert-bandwidth
+ !toggle-wan-Central ip unnumbered Loopback0
+ !toggle-wan-Central delay 2200
+ !toggle-wan-Central mpls mtu max
+ !toggle-wan-Central mpls ip
+ !toggle-wan-Central tunnel source insert-wan-port.2413
+ !toggle-wan-Central tunnel destination 10.95.18.insert-hubsplice
+ !toggle-wan-Central tunnel key 2022
+ !toggle-wan-Central tunnel path-mtu-discovery
+ !toggle-wan-Central tunnel vrf fvrf-mw-wan-Central
+ !toggle-wan-Central tunnel protection ipsec profile IPSEC_PROFILE_MW_CENTRAL shared
+!toggle-wan-Central router eigrp underlay
+ !toggle-wan-Central address-family ipv4 unicast autonomous-system 100
+  !toggle-wan-Central af-interface Tunnel2021
+   !toggle-wan-Central no passive-interface
+  !toggle-wan-Central exit-af-interface
+  !toggle-wan-Central af-interface Tunnel2022
+   !toggle-wan-Central no passive-interface
+  !toggle-wan-Central exit-af-interface
+ !toggle-wan-Central exit-address-family
+!toggle-wan-Central interface insert-wan-port 
+ !toggle-wan-Central bandwidth insert-bandwidth
+ !toggle-wan-Central no ip address
+ !toggle-wan-Central media-type insert-wan-media
+ !toggle-wan-Central no shut
+!toggle-wan-East vrf definition fvrf-mw-wan-East
+ !toggle-wan-East address-family ipv4
+ !toggle-wan-East exit-address-family
+!toggle-wan-East crypto ikev2 profile IKEV2_PROFILE_MW_EAST
+ !toggle-wan-East match fvrf fvrf-mw-wan-East
+ !toggle-wan-East match identity remote any
+ !toggle-wan-East authentication remote pre-share
+ !toggle-wan-East authentication local pre-share
+ !toggle-wan-East keyring local IKEV2_KEYRING
+ !toggle-wan-East dpd 10 2 periodic
+ !toggle-wan-East initial-contact force
+!toggle-wan-East crypto ipsec profile IPSEC_PROFILE_MW_EAST
+ !toggle-wan-East set security-association lifetime kilobytes disable
+ !toggle-wan-East set security-association lifetime seconds 7200
+ !toggle-wan-East set security-association replay window-size 512
+ !toggle-wan-East set transform-set IPSEC_TRANSFORM
+ !toggle-wan-East set pfs group21
+ !toggle-wan-East set ikev2-profile IKEV2_PROFILE_MW_EAST
+!toggle-wan-East interface insert-wan-port.2414
+ !toggle-wan-East description MW-wan-East
+ !toggle-wan-East encapsulation dot1Q 2414
+ !toggle-wan-East vrf forwarding fvrf-mw-wan-East
+ !toggle-wan-East ip address insert-wan-ip 255.255.255.192
+!toggle-wan-East ip route vrf fvrf-mw-wan-East 10.94.18.0 255.255.255.0 172.30.57.117
+!toggle-wan-East ip route vrf fvrf-mw-wan-East 10.95.18.0 255.255.255.0 172.30.57.118
+!toggle-wan-East interface Tunnel2031
+ !toggle-wan-East description MW-wan-East:wimdsngodc-tel-drtinsert-hubsplice
+ !toggle-wan-East bandwidth insert-bandwidth
+ !toggle-wan-East ip unnumbered Loopback0
+ !toggle-wan-East delay 2300
+ !toggle-wan-East mpls mtu max
+ !toggle-wan-East mpls ip
+ !toggle-wan-East tunnel source insert-wan-port.2414
+ !toggle-wan-East tunnel destination 10.94.18.insert-hubsplice
+ !toggle-wan-East tunnel key 2031
+ !toggle-wan-East tunnel path-mtu-discovery
+ !toggle-wan-East tunnel vrf fvrf-mw-wan-East
+ !toggle-wan-East tunnel protection ipsec profile IPSEC_PROFILE_MW_EAST shared
+!toggle-wan-East interface Tunnel2032
+ !toggle-wan-East description MW-wan-East:iacdrrgo-tel-drtinsert-hubsplice
+ !toggle-wan-East bandwidth insert-bandwidth
+ !toggle-wan-East ip unnumbered Loopback0
+ !toggle-wan-East delay 2300
+ !toggle-wan-East mpls mtu max
+ !toggle-wan-East mpls ip
+ !toggle-wan-East tunnel source insert-wan-port.2414
+ !toggle-wan-East tunnel destination 10.95.18.insert-hubsplice
+ !toggle-wan-East tunnel key 2032
+ !toggle-wan-East tunnel path-mtu-discovery
+ !toggle-wan-East tunnel vrf fvrf-mw-wan-East
+ !toggle-wan-East tunnel protection ipsec profile IPSEC_PROFILE_MW_EAST shared
+!toggle-wan-East router eigrp underlay
+ !toggle-wan-East address-family ipv4 unicast autonomous-system 100
+  !toggle-wan-East af-interface Tunnel2031
+   !toggle-wan-East no passive-interface
+  !toggle-wan-East exit-af-interface
+  !toggle-wan-East af-interface Tunnel2032
+   !toggle-wan-East no passive-interface
+  !toggle-wan-East exit-af-interface
+ !toggle-wan-East exit-address-family
+!toggle-wan-East interface insert-wan-port 
+ !toggle-wan-East bandwidth insert-bandwidth
+ !toggle-wan-East no ip address
+ !toggle-wan-East media-type insert-wan-media
+ !toggle-wan-East no shut
+!toggle-wan-South vrf definition fvrf-mw-wan-South
+ !toggle-wan-South address-family ipv4
+ !toggle-wan-South exit-address-family
+!toggle-wan-South crypto ikev2 profile IKEV2_PROFILE_MW_SOUTH
+ !toggle-wan-South match fvrf fvrf-mw-wan-South
+ !toggle-wan-South match identity remote any
+ !toggle-wan-South authentication remote pre-share
+ !toggle-wan-South authentication local pre-share
+ !toggle-wan-South keyring local IKEV2_KEYRING
+ !toggle-wan-South dpd 10 2 periodic
+ !toggle-wan-South initial-contact force
+!toggle-wan-South crypto ipsec profile IPSEC_PROFILE_MW_SOUTH
+ !toggle-wan-South set security-association lifetime kilobytes disable
+ !toggle-wan-South set security-association lifetime seconds 7200
+ !toggle-wan-South set security-association replay window-size 512
+ !toggle-wan-South set transform-set IPSEC_TRANSFORM
+ !toggle-wan-South set pfs group21
+ !toggle-wan-South set ikev2-profile IKEV2_PROFILE_MW_SOUTH
+!toggle-wan-South interface insert-wan-port.2415
+ !toggle-wan-South description MW-wan-South
+ !toggle-wan-South encapsulation dot1Q 2415
+ !toggle-wan-South vrf forwarding fvrf-mw-wan-South
+ !toggle-wan-South ip address insert-wan-ip 255.255.255.192
+!toggle-wan-South ip route vrf fvrf-mw-wan-South 10.94.18.0 255.255.255.0 172.30.57.181
+!toggle-wan-South ip route vrf fvrf-mw-wan-South 10.95.18.0 255.255.255.0 172.30.57.182
+!toggle-wan-South interface Tunnel2041
+ !toggle-wan-South description MW-wan-South:wimdsngodc-tel-drtinsert-hubsplice
+ !toggle-wan-South bandwidth insert-bandwidth
+ !toggle-wan-South ip unnumbered Loopback0
+ !toggle-wan-South delay 2400
+ !toggle-wan-South mpls mtu max
+ !toggle-wan-South mpls ip
+ !toggle-wan-South tunnel source insert-wan-port.2415
+ !toggle-wan-South tunnel destination 10.94.18.insert-hubsplice
+ !toggle-wan-South tunnel key 2041
+ !toggle-wan-South tunnel path-mtu-discovery
+ !toggle-wan-South tunnel vrf fvrf-mw-wan-South
+ !toggle-wan-South tunnel protection ipsec profile IPSEC_PROFILE_MW_SOUTH shared
+!toggle-wan-South interface Tunnel2042
+ !toggle-wan-South description MW-wan-South:iacdrrgo-tel-drtinsert-hubsplice
+ !toggle-wan-South bandwidth insert-bandwidth
+ !toggle-wan-South ip unnumbered Loopback0
+ !toggle-wan-South delay 2400
+ !toggle-wan-South mpls mtu max
+ !toggle-wan-South mpls ip
+ !toggle-wan-South tunnel source insert-wan-port.2415
+ !toggle-wan-South tunnel destination 10.95.18.insert-hubsplice
+ !toggle-wan-South tunnel key 2042
+ !toggle-wan-South tunnel path-mtu-discovery
+ !toggle-wan-South tunnel vrf fvrf-mw-wan-South
+ !toggle-wan-South tunnel protection ipsec profile IPSEC_PROFILE_MW_SOUTH shared
+!toggle-wan-South router eigrp underlay
+ !toggle-wan-South address-family ipv4 unicast autonomous-system 100
+  !toggle-wan-South af-interface Tunnel2041
+   !toggle-wan-South no passive-interface
+  !toggle-wan-South exit-af-interface
+  !toggle-wan-South af-interface Tunnel2042
+   !toggle-wan-South no passive-interface
+  !toggle-wan-South exit-af-interface
+ !toggle-wan-South exit-address-family
+!toggle-wan-South interface insert-wan-port 
+ !toggle-wan-South bandwidth insert-bandwidth
+ !toggle-wan-South no ip address
+ !toggle-wan-South media-type insert-wan-media
+ !toggle-wan-South no shut
+!toggle-wan-Local vrf definition fvrf-mw-iacdrr
+ !toggle-wan-Local address-family ipv4
+ !toggle-wan-Local exit-address-family
+!toggle-wan-Local crypto ikev2 profile IKEV2_PROFILE_MW_IACDRR
+ !toggle-wan-Local match fvrf fvrf-mw-iacdrr
+ !toggle-wan-Local match identity remote any
+ !toggle-wan-Local authentication remote pre-share
+ !toggle-wan-Local authentication local pre-share
+ !toggle-wan-Local keyring local IKEV2_KEYRING
+ !toggle-wan-Local dpd 10 2 periodic
+ !toggle-wan-Local initial-contact force
+!toggle-wan-Local crypto ipsec profile IPSEC_PROFILE_MW_IACDRR
+ !toggle-wan-Local set security-association lifetime kilobytes disable
+ !toggle-wan-Local set security-association lifetime seconds 7200
+ !toggle-wan-Local set security-association replay window-size 512
+ !toggle-wan-Local set transform-set IPSEC_TRANSFORM
+ !toggle-wan-Local set pfs group21
+ !toggle-wan-Local set ikev2-profile IKEV2_PROFILE_MW_IACDRR
+!toggle-wan-Local interface insert-wan-port.2418
+ !toggle-wan-Local description MW-IACDRR
+ !toggle-wan-Local encapsulation dot1Q 2418
+ !toggle-wan-Local vrf forwarding fvrf-mw-iacdrr
+ !toggle-wan-Local ip address insert-wan-ip 255.255.255.192
+!toggle-wan-Local ip route vrf fvrf-mw-iacdrr 10.94.18.0 255.255.255.0 172.30.57.245
+!toggle-wan-Local ip route vrf fvrf-mw-iacdrr 10.95.18.0 255.255.255.0 172.30.57.246
+!toggle-wan-Local interface Tunnel2051
+ !toggle-wan-Local description MW-IACDRR:wimdsngodc-tel-drtinsert-hubsplice
+ !toggle-wan-Local bandwidth insert-bandwidth
+ !toggle-wan-Local ip unnumbered Loopback0
+ !toggle-wan-Local delay 2500
+ !toggle-wan-Local mpls mtu max
+ !toggle-wan-Local mpls ip
+ !toggle-wan-Local tunnel source insert-wan-port.2418
+ !toggle-wan-Local tunnel destination 10.94.18.insert-hubsplice
+ !toggle-wan-Local tunnel key 2051
+ !toggle-wan-Local tunnel path-mtu-discovery
+ !toggle-wan-Local tunnel vrf fvrf-mw-iacdrr
+ !toggle-wan-Local tunnel protection ipsec profile IPSEC_PROFILE_MW_IACDRR shared
+!toggle-wan-Local interface Tunnel2052
+ !toggle-wan-Local description MW-IACDRR:iacdrrgo-tel-drtinsert-hubsplice
+ !toggle-wan-Local bandwidth insert-bandwidth
+ !toggle-wan-Local ip unnumbered Loopback0
+ !toggle-wan-Local delay 2500
+ !toggle-wan-Local mpls mtu max
+ !toggle-wan-Local mpls ip
+ !toggle-wan-Local tunnel source insert-wan-port.2418
+ !toggle-wan-Local tunnel destination 10.95.18.insert-hubsplice
+ !toggle-wan-Local tunnel key 2052
+ !toggle-wan-Local tunnel path-mtu-discovery
+ !toggle-wan-Local tunnel vrf fvrf-mw-iacdrr
+ !toggle-wan-Local tunnel protection ipsec profile IPSEC_PROFILE_MW_IACDRR shared
+!toggle-wan-Local router eigrp underlay
+ !toggle-wan-Local address-family ipv4 unicast autonomous-system 100
+  !toggle-wan-Local af-interface Tunnel2051
+   !toggle-wan-Local no passive-interface
+  !toggle-wan-Local exit-af-interface
+  !toggle-wan-Local af-interface Tunnel2052
+   !toggle-wan-Local no passive-interface
+  !toggle-wan-Local exit-af-interface
+ !toggle-wan-Local exit-address-family
+!toggle-wan-Local interface insert-wan-port 
+ !toggle-wan-Local bandwidth insert-bandwidth
+ !toggle-wan-Local no ip address
+ !toggle-wan-Local media-type insert-wan-media
+ !toggle-wan-Local no shut
+##############################################################################
+# Remember to save!
+##############################################################################
+!
+wr

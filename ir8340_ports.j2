@@ -1,0 +1,11 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Switchport Configuration
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+interface {{ port.interface }}
+ description {{ port.description }}
+ switchport mode {{ port.switchport_mode }}
+ switchport access vlan {{ port.vlan }}
+ media-type {{ port.media_type }}
+ {{ port.shutdown }}
+!

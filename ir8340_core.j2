@@ -1,0 +1,389 @@
+! ============================
+! Core Network Configuration
+! ============================
+cellular 0/4/0 lte profile create 3 ALLIANT.VZWENTP none ipv4v6
+#press enter a few times to confirm
+!
+!
+!
+conf t
+hostname {{ core.hostname }}
+ip domain name bb.alnt.net
+no service config
+ip ssh time-out 30
+ip ssh logging events
+ip ssh version 2
+ip ssh dscp 16
+crypto key generate rsa modulus 3072
+!
+##############################################################################
+# Loopback0 IP, eigrp router-id and bgp router-id 
+##############################################################################
+!
+interface Loopback0
+ description underlay loopback
+ ip address {{ core.loopback0 }} 255.255.255.255
+!
+router eigrp underlay
+ !
+ address-family ipv4 unicast autonomous-system 100
+  !
+  af-interface default
+   passive-interface
+  exit-af-interface
+  !
+  topology base
+  exit-af-topology
+  network {{ core.loopback0 }} 0.0.0.0
+  eigrp router-id {{ core.loopback0 }}
+  eigrp stub connected
+ exit-address-family
+!
+ip bgp-community new-format
+router bgp 65310.10{{ core.hub_slice }}
+ bgp router-id {{ core.loopback0 }}
+ bgp asnotation dot
+ bgp log-neighbor-changes
+ bgp bestpath cost-community ignore
+ neighbor RR_SERVERS peer-group
+ neighbor RR_SERVERS remote-as 65310.10{{ core.hub_slice }}
+ neighbor RR_SERVERS update-source Loopback0
+ neighbor RR_SERVERS timers 5 20
+ neighbor 10.94.17.{{ core.hub_slice }} peer-group RR_SERVERS
+ neighbor 10.95.17.{{ core.hub_slice }} peer-group RR_SERVERS
+ !
+ address-family ipv4
+  neighbor RR_SERVERS send-community both
+  neighbor RR_SERVERS route-map RR_SERVERS_IN in
+  neighbor 10.94.17.{{ core.hub_slice }} activate
+  neighbor 10.95.17.{{ core.hub_slice }} activate
+ exit-address-family
+ !
+ address-family vpnv4
+  neighbor RR_SERVERS send-community both
+  neighbor RR_SERVERS route-map RR_SERVERS_IN in
+  neighbor 10.94.17.{{ core.hub_slice }} activate
+  neighbor 10.95.17.{{ core.hub_slice }} activate
+ exit-address-family
+!
+##############################################################################
+# Management
+##############################################################################
+!
+vrf definition ipl-mgmt
+ rd 65310:1107
+ route-target export 65310:21107
+ route-target import 65310:11107
+ !
+ address-family ipv4
+ exit-address-family
+!
+interface Loopback1
+ description ipl-mgmt loopback
+ vrf forwarding ipl-mgmt
+ ip address {{ core.loopback1 }} 255.255.255.255
+!
+router bgp 65310.10{{ core.hub_slice }}
+ address-family ipv4 vrf ipl-mgmt
+  redistribute connected
+ exit-address-family
+!
+aaa new-model
+aaa group server tacacs+ ali-mgmt
+ server-private 10.80.128.149 key 7 0559360E255B653901172147132534053927230511
+ ip vrf forwarding ipl-mgmt
+ ip tacacs source-interface loopback1
+ntp source loopback1
+ntp server vrf ipl-mgmt 10.80.0.1 prefer
+ntp server vrf ipl-mgmt 10.80.0.2
+!
+logging trap notifications
+logging origin-id hostname
+logging source-interface Loopback1 vrf ipl-mgmt
+logging host 172.28.2.162 vrf ipl-mgmt
+logging host 10.80.128.148 vrf ipl-mgmt
+!
+##############################################################################
+# Auth and Timing
+##############################################################################
+!
+no service pad
+no service finger
+service tcp-keepalives-in
+service tcp-keepalives-out
+service timestamps debug datetime msec localtime show-timezone year
+service timestamps log datetime msec localtime show-timezone year
+service password-encryption
+service sequence-numbers
+service counters max age 40
+no service dhcp
+!
+logging userinfo
+logging buffered 51200 debugging
+logging rate-limit 1 except notifications
+logging console critical
+enable secret 5 $1$9OLx$WICXM747focFEKWCwcNzF0
+!
+username backbone secret 5 $1$rc3u$Wv2gWIi8Naj4p0bJepQ/t1
+aaa authentication login default group ali-mgmt local-case
+aaa authentication login NOAUTH none
+aaa authentication enable default enable
+aaa authorization console
+aaa authorization exec default group ali-mgmt if-authenticated
+aaa accounting send stop-record authentication failure
+aaa accounting nested
+aaa accounting exec default
+ action-type start-stop
+ group ali-mgmt
+aaa accounting commands 1 default
+ action-type start-stop
+ group ali-mgmt
+aaa accounting commands 15 default
+ action-type start-stop
+ group ali-mgmt
+aaa accounting connection default
+ action-type stop-only
+ group ali-mgmt
+aaa session-id common
+!
+clock timezone CST -6 0
+clock summer-time CDT recurring
+no ip source-route
+no ip gratuitous-arps
+ip dhcp bootp ignore
+no ip bootp server
+no ip domain lookup
+login on-failure log
+login on-success log
+mpls ldp explicit-null
+lldp run
+ip telnet source-interface loopback 1
+no ip http server
+no ip http secure-server
+!
+##############################################################################
+# QOS
+##############################################################################
+!
+ip access-list extended ISAKMP
+ permit udp any eq isakmp any eq isakmp
+!
+class-map match-any REALTIME
+ match dscp ef
+ match dscp cs5
+ match dscp cs4
+class-map match-any CRITICAL-DATA
+ match dscp af41  af42  af43
+ match dscp af31  af32  af33
+ match dscp af21  af22  af23
+ match dscp af11  af12  af13
+class-map match-any CONTROL
+ match dscp cs6
+ match dscp cs3
+ match dscp cs2
+ match access-group name ISAKMP
+!
+policy-map WAN-EDGE-4-CLASS
+ class REALTIME
+  priority percent 33
+ class CONTROL
+  bandwidth percent 7
+  queue-limit 128 packets
+ class CRITICAL-DATA
+  bandwidth percent 35
+  fair-queue
+  random-detect dscp-based
+  random-detect dscp 10 50 64
+  random-detect dscp 12 45 64
+  random-detect dscp 14 40 64
+  random-detect dscp 18 50 64
+  random-detect dscp 20 45 64
+  random-detect dscp 22 40 64
+  random-detect dscp 26 50 64
+  random-detect dscp 28 45 64
+  random-detect dscp 30 40 64
+  random-detect dscp 34 50 64
+  random-detect dscp 36 45 64
+  random-detect dscp 38 40 64
+ class class-default
+  bandwidth percent 25
+  fair-queue
+  queue-limit 128 packets
+  random-detect dscp-based
+  random-detect dscp 0 100 128
+  random-detect dscp 8 60 100
+policy-map WAN-EDGE-4-CLASS-SHAPED
+ class class-default
+  shape average percent 100
+   service-policy WAN-EDGE-4-CLASS
+!
+##############################################################################
+# Crypto
+##############################################################################
+!
+crypto isakmp invalid-spi-recovery
+crypto ikev2 authorization policy IKEV2_POLICY
+ no route accept
+crypto ikev2 proposal IKEV2_PROPOSAL
+ encryption aes-cbc-256
+ integrity sha512
+ group 21
+crypto ikev2 policy IKEV2_POLICY
+ match fvrf any
+ proposal IKEV2_PROPOSAL
+crypto ikev2 keyring IKEV2_KEYRING
+ peer ALL
+  address 0.0.0.0 0.0.0.0
+  pre-shared-key BONViIkyFXwSUyQj1mJ537lOiwxC3Jfq
+crypto ikev2 profile IKEV2_PROFILE_VERIZON
+ match fvrf fvrf-verizon
+ match identity remote any
+ authentication remote pre-share
+ authentication local pre-share
+ keyring local IKEV2_KEYRING
+ dpd 10 2 periodic
+ initial-contact force
+crypto ipsec transform-set IPSEC_TRANSFORM esp-aes 256 esp-sha-hmac
+ mode transport
+crypto ipsec profile IPSEC_PROFILE_VERIZON
+ set security-association lifetime kilobytes disable
+ set security-association lifetime seconds 7200
+ set security-association replay window-size 512
+ set transform-set IPSEC_TRANSFORM
+ set pfs group21
+ set ikev2-profile IKEV2_PROFILE_VERIZON
+!
+no crypto ikev2 authorization policy default
+no crypto ikev2 policy default
+no crypto ikev2 proposal default
+no crypto ipsec transform-set default
+no crypto ipsec profile default
+!
+ip community-list standard RTBH permit 65535:666
+ip ftp source-interface loopback1
+ip tftp source-interface loopback1
+ip route 192.0.2.1 255.255.255.255 Null0
+!
+route-map RR_SERVERS_IN permit 10
+ description Remotely Triggered Black Hole
+ match community RTBH
+ set ip next-hop 192.0.2.1
+!
+route-map RR_SERVERS_IN permit 20
+ description Allow everything else
+!
+ip access-list standard SNMP-NMS
+ permit 10.80.128.91
+ permit 10.80.128.92
+ permit 10.80.128.93
+ deny   any log
+!
+##############################################################################
+# Banner & SNMP
+##############################################################################
+!
+snmp-server view NMS iso included
+snmp-server community fYl8mxQlMmgIRXk view NMS RO SNMP-NMS
+snmp-server location {{ core.city}}, {{ core.state }} | {{ core.location_type }}
+snmp-server ifindex persist
+snmp-server ip dscp 16
+snmp-server contact DL_IT_Telecom_Analyst@alliantenergy.com
+snmp ifmib ifalias long
+snmp ifmib trap throttle
+mpls ldp router-id Loopback0
+!
+banner exec ^
+Welcome. You have logged in to $(hostname).$(domain)
+^
+banner login ^
+***************************************************************
+
+  THIS SYSTEM IS PROVIDED FOR USE BY AUTHORIZED USERS ONLY.  
+  UNAUTHORIZED USE PROHIBITED. VIOLATORS WILL BE PROSECUTED. 
+
+***************************************************************
+^
+multilink bundle-name authenticated
+cts logging verbose
+redundancy
+line con 0
+ transport preferred none
+ stopbits 1
+line vty 0 15
+ session-timeout 30 
+ access-class vtyaccess in vrf-also
+ exec-timeout 30 0
+ privilege level 0
+ transport preferred none
+ transport input ssh
+!
+##############################################################################
+# Verizon Cellular Config
+##############################################################################
+!
+controller Cellular 0/4/0
+ lte sim data-profile 3 attach-profile 1 slot 0
+ description Verizon
+!
+default interface cellular 0/4/0
+interface Cellular0/4/0
+ vrf forwarding fvrf-verizon
+ ip address negotiated
+ ip tcp adjust-mss 1300
+ dialer in-band
+ dialer watch-group 1
+ pulse-time 1 
+ no shutdown
+!
+interface Cellular0/4/1
+shutdown
+!
+ip route vrf fvrf-verizon 0.0.0.0 0.0.0.0 Cellular0/4/0
+dialer-list 1 protocol ip permit
+dialer watch-list 1 ip 198.51.100.0 255.255.255.255
+dialer watch-list 1 delay connect 1
+dialer watch-list 1 delay route-check initial 60
+!
+interface Tunnel3001
+ description VERIZON:wimdsngodc-tel-drt{{ core.hub_slice }}
+ bandwidth 10000
+ ip unnumbered Loopback0
+ delay 3000
+ mpls mtu max
+ mpls ip
+ tunnel source Cellular0/4/0
+ tunnel destination 10.94.18.{{ core.hub_slice }}
+ tunnel key 3001
+ tunnel path-mtu-discovery
+ tunnel vrf fvrf-verizon
+ tunnel protection ipsec profile IPSEC_PROFILE_VERIZON shared
+!
+interface Tunnel3002
+ description VERIZON:iacdrrgo-tel-drt{{ core.hub_slice }}
+ bandwidth 10000
+ ip unnumbered Loopback0
+ delay 3000
+ mpls mtu max
+ mpls ip
+ tunnel source Cellular0/4/0
+ tunnel destination 10.95.18.{{ core.hub_slice }}
+ tunnel key 3002
+ tunnel path-mtu-discovery
+ tunnel vrf fvrf-verizon
+ tunnel protection ipsec profile IPSEC_PROFILE_VERIZON shared
+!
+router eigrp underlay
+ !
+ address-family ipv4 unicast autonomous-system 100
+  !
+  af-interface Tunnel3001
+   no passive-interface
+  exit-af-interface
+  !
+  af-interface Tunnel3002
+   no passive-interface
+  exit-af-interface
+  !
+ exit-address-family
+!
+

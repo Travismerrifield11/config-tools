@@ -1,83 +1,89 @@
-// ports.js
+document.addEventListener("DOMContentLoaded", () => {
+    // ----------------------------
+    // VRF Options
+    // ----------------------------
+    const vrfOptions = [
+        "2WR","AMI","FWBB","GAS","IPCAM","MGMT","PEER","PHYSEC","SUB"
+    ];
 
-const allPorts = [
-  "Gi 0/0/0","Gi 0/0/1","Gi 0/0/2","Gi 0/0/3",
-  "Gi 0/0/4","Gi 0/0/5","Gi 0/0/6","Gi 0/0/7",
-  "Gi 0/0/8","Gi 0/0/9","Gi 0/0/10","Gi 0/0/11"
-];
+    // ----------------------------
+    // Port Options
+    // ----------------------------
+    const portOptions = Array.from({ length: 12 }, (_, i) => `Gi 0/0/${i}`);
 
-const allVrfs = ["2WR","AMI","FWBB","GAS","IPCAM","MGMT","PEER","PHYSEC","SUB"];
+    // ----------------------------
+    // Table and Button References
+    // ----------------------------
+    const tableBody = document.querySelector("#portTable tbody");
+    const addBtn = document.getElementById("addPort");
+    const portSelect = document.getElementById("portSelect"); // We'll create a select in HTML for port choices
 
-const tableBody = document.querySelector("#portTable tbody");
-const addBtn = document.getElementById("addPort");
+    // ----------------------------
+    // Media Type Logic
+    // ----------------------------
+    function getMediaType(portName) {
+        const index = parseInt(portName.split("/").pop());
+        if (index >= 0 && index <= 3) return "Copper";
+        if (index >= 4 && index <= 7) return ""; // user-selectable
+        if (index >= 8 && index <= 11) return "SFP";
+        return "";
+    }
 
-// Determine the media type options for each port
-function getMediaTypeOptions(port) {
-  if (["Gi 0/0/0","Gi 0/0/1","Gi 0/0/2","Gi 0/0/3"].includes(port)) {
-    return '<input type="text" value="Copper" readonly>';
-  } else if (["Gi 0/0/4","Gi 0/0/5","Gi 0/0/6","Gi 0/0/7"].includes(port)) {
-    return '<select class="media-type">' +
-      '<option value="Copper">Copper</option>' +
-      '<option value="SFP">SFP</option>' +
-      '</select>';
-  } else { // 8-11
-    return '<input type="text" value="SFP" readonly>';
-  }
-}
+    // ----------------------------
+    // Add a new row
+    // ----------------------------
+    function addRow() {
+        const selectedPort = portSelect.value;
+        if (!selectedPort) {
+            alert("Please select a port to add.");
+            return;
+        }
 
-// Updates VRF dropdowns in all rows (prevents duplicates if desired)
-function updateVrfDropdowns() {
-  const selected = [...document.querySelectorAll(".vrf-select")]
-    .map(s => s.value)
-    .filter(v => v);
+        // Prevent adding the same port twice
+        const existingPorts = Array.from(tableBody.querySelectorAll("td:first-child")).map(td => td.textContent);
+        if (existingPorts.includes(selectedPort)) {
+            alert(`${selectedPort} is already added.`);
+            return;
+        }
 
-  document.querySelectorAll(".vrf-select").forEach(sel => {
-    const current = sel.value;
-    sel.innerHTML =
-      '<option value="">Select...</option>' +
-      allVrfs
-        .filter(v => v === current || !selected.includes(v))
-        .map(v => `<option value="${v}">${v}</option>`)
-        .join("");
-    sel.value = current;
-  });
-}
+        const row = document.createElement("tr");
 
-// Adds a new row to the Ports table
-function addRow() {
-  const row = document.createElement("tr");
+        // Build VRF options for this row
+        const vrfSelectOptions = vrfOptions.map(v => `<option value="${v}">${v}</option>`).join("");
 
-  // Only allow ports that haven’t been added yet
-  const usedPorts = [...document.querySelectorAll(".port-label")].map(p => p.textContent);
-  const availablePorts = allPorts.filter(p => !usedPorts.includes(p));
-  if (availablePorts.length === 0) return;
+        // Build Media Type input
+        const mediaTypeValue = getMediaType(selectedPort);
+        const mediaTypeInput = (mediaTypeValue === "")
+            ? `<select class="media-type">
+                    <option value="Copper">Copper</option>
+                    <option value="SFP">SFP</option>
+               </select>`
+            : `<input type="text" value="${mediaTypeValue}" readonly>`;
 
-  const port = availablePorts[0];
+        // Row HTML
+        row.innerHTML = `
+            <td>${selectedPort}</td>
+            <td><input type="text" placeholder="Description"></td>
+            <td>
+                <select class="vrf-select">
+                    <option value="">Select...</option>
+                    ${vrfSelectOptions}
+                </select>
+            </td>
+            <td>${mediaTypeInput}</td>
+            <td><button class="remove">Remove</button></td>
+        `;
 
-  row.innerHTML =
-    `<td class="port-label">${port}</td>` +
-    `<td><input type="text" placeholder="Description"></td>` +
-    `<td>` +
-      `<select class="vrf-select">` +
-        `<option value="">Select...</option>` +
-        allVrfs.map(v => `<option value="${v}">${v}</option>`).join("") +
-      `</select>` +
-    `</td>` +
-    `<td class="media-cell">${getMediaTypeOptions(port)}</td>` +
-    `<td><button class="remove">Remove</button></td>`;
+        // Remove button
+        row.querySelector(".remove").addEventListener("click", () => {
+            row.remove();
+        });
 
-  const vrfSelect = row.querySelector(".vrf-select");
-  const removeBtn = row.querySelector(".remove");
+        tableBody.appendChild(row);
+    }
 
-  vrfSelect.addEventListener("change", updateVrfDropdowns);
-
-  removeBtn.addEventListener("click", () => {
-    row.remove();
-    updateVrfDropdowns();
-  });
-
-  tableBody.appendChild(row);
-  updateVrfDropdowns();
-}
-
-addBtn.addEventListener("click", addRow);
+    // ----------------------------
+    // Add Button Click Event
+    // ----------------------------
+    addBtn.addEventListener("click", addRow);
+});

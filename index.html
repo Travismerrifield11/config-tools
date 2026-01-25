@@ -201,59 +201,64 @@
 			</div>
 		</div>
 <!-- ================= VRF SECTION ================= -->
-		<div class="vrf-section">
+		<div class="vrf-section section">
 			<h3>VRFs</h3>
-			<table id="vrfTable">
-			<thead>
-				<tr>
-				<th>VRF</th>
-				<th>Default Gateway</th>
-				<th>Subnet Mask</th>
-				<th></th>
-				</tr>
-			</thead>
-			<tbody></tbody>
-			</table>
 
-			<button id="addVrf">Add VRF</button>
-		</div>
-<!-- ================= PORTS SECTION ================= -->
-		<div class="ports-section section">
-			<h3>Ports</h3>
-
-			<!-- Port Selection -->
-			<div class="field" style="display: flex; align-items: left; gap: 8px; justify-content: flex-start;">
-				<select id="portSelect" style="width: 180px;">
-					<option value="">Select a port to add...</option>
-					<option value="Gi 0/0/0">Gi 0/0/0</option>
-					<option value="Gi 0/0/1">Gi 0/0/1</option>
-					<option value="Gi 0/0/2">Gi 0/0/2</option>
-					<option value="Gi 0/0/3">Gi 0/0/3</option>
-					<option value="Gi 0/0/4">Gi 0/0/4</option>
-					<option value="Gi 0/0/5">Gi 0/0/5</option>
-					<option value="Gi 0/0/6">Gi 0/0/6</option>
-					<option value="Gi 0/0/7">Gi 0/0/7</option>
-					<option value="Gi 0/0/8">Gi 0/0/8</option>
-					<option value="Gi 0/0/9">Gi 0/0/9</option>
-					<option value="Gi 0/0/10">Gi 0/0/10</option>
-					<option value="Gi 0/0/11">Gi 0/0/11</option>
+			<!-- VRF Selection -->
+			<div class="field" style="display: flex; align-items: left; gap: 8px; justify-content: flex-start; margin-bottom: 8px;">
+				<select id="vrfSelect" style="width: 180px;">
+					<option value="">Select...</option>
+					<option value="2WR">2WR</option>
+					<option value="AMI">AMI</option>
+					<option value="FWBB">FWBB</option>
+					<option value="GAS">GAS</option>
+					<option value="IPCAM">IPCAM</option>
+					<option value="MGMT">MGMT</option>
+					<option value="PEER">PEER</option>
+					<option value="PHYSEC">PHYSEC</option>
+					<option value="SUB">SUB</option>
 				</select>
-				<button id="addPort" style="width: 100px;">Add Port</button>
+				<button id="addVrf" class="btn-add">Add VRF</button>
 			</div>
 
-			<!-- Ports Table -->
-			<table id="portTable">
+			<!-- VRF Table -->
+			<table id="vrfTable">
 				<thead>
 					<tr>
-						<th>Port</th>
-						<th>Description</th>
 						<th>VRF</th>
-						<th>Media Type</th>
+						<th>Default Gateway</th>
+						<th>Subnet Mask</th>
 						<th></th>
 					</tr>
 				</thead>
 				<tbody></tbody>
 			</table>
+		</div>
+
+<!-- ================= PORTS SECTION ================= -->
+		<div class="ports-section">
+		  <h3>Ports</h3>
+
+		  <div class="field">
+			<select id="selectPort" style="width: 180px;">
+			  <option value="">Select...</option>
+			</select>
+		  </div>
+
+		  <button id="addPort">Add Port</button>
+
+		  <table id="portTable">
+			<thead>
+			  <tr>
+				<th>Port</th>
+				<th>Description</th>
+				<th>VRF</th>
+				<th>Media Type</th>
+				<th></th>
+			  </tr>
+			</thead>
+			<tbody></tbody>
+		  </table>
 		</div>
 
 

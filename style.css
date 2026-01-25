@@ -39,14 +39,51 @@
             border-bottom: 1px solid #2a2a2a;
             padding-bottom: 6px;
         }
-		.vrf-section {
-			border: 1px solid #2a2a2a;
-			border-radius: 8px;
-			padding: 12px;
-			margin-bottom: 16px;
-			background: #161616;
-			border-bottom: 1px solid #2a2a2a;
+		
+		/* -------- VRF Section -------- */
+		.vrf-section table {
+			border-collapse: collapse;
+			width: 100%;
 		}
+
+		.vrf-section table th,
+		.vrf-section table td {
+			padding: 6px 8px;
+			text-align: left;
+		}
+
+		.vrf-section table th:first-child,
+		.vrf-section table td:first-child {
+			white-space: nowrap; 
+			max-width: 120px;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		.vrf-section table {
+			border: none; 
+		}
+
+		.vrf-section button {
+			margin-left: 0;
+		}
+
+		.vrf-section select {
+			background: #1c1c1c;
+			color: #e6e6e6;
+			border: 1px solid #333;
+			border-radius: 4px;
+			padding: 6px 8px;
+		}
+
+		.vrf-section input {
+			background: #1c1c1c;
+			color: #e6e6e6;
+			border: 1px solid #333;
+			border-radius: 4px;
+			padding: 6px 8px;
+		}
+
 		/* -------- Ports Section -------- */
 		.ports-section {
 			border: 1px solid #2a2a2a;
@@ -109,6 +146,36 @@
 			overflow: hidden;
 			text-overflow: ellipsis;
 		}
+		/* -------- BUTTONS! -------- */
+		.btn-add {
+			background: #1976d2;
+			color: white;
+			border: none;
+			padding: 6px 12px;
+			border-radius: 4px;
+			cursor: pointer;
+			margin-top: 0px;
+			width: 80px
+		}
+
+		.btn-add:hover {
+			background: #3570d2;
+		}
+
+		.btn-remove {
+			background: #d9534f;
+			color: #fff;
+			border: none;
+			border-radius: 4px;
+			padding: 6px 12px;
+			cursor: pointer;
+			font-size: 13px;
+		}
+
+		.btn-remove:hover {
+			background: #c9302c;
+		}
+
 		
         /* Two-column core layout */
         .core-grid {

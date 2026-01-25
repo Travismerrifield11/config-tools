@@ -11,10 +11,10 @@
 
 <div class="app-layout">
 
-    <!-- ================= LEFT ================= -->
+<!-- ================= LEFT SIDE ================= -->
     <div class="left-pane">
 
-        <!-- -------- Core Section -------- -->
+<!-- ================= CORE SECTION ================= -->
         <div class="section">
             <h2>Core Network</h2>
 
@@ -87,138 +87,179 @@
 
 
 <!-- ================= WAN SECTION ================= -->
-	<div class="section">
-    <h2>WAN Configuration</h2>
+		<div class="section">
+			<h2>WAN Configuration</h2>
 
-    <div class="core-grid">
+			<div class="core-grid">
 
-        <!-- ===== WAN PORT 0/1/0 ===== -->
-        <div>
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                <input type="checkbox" id="wan0-enabled">
-                <label for="wan0-enabled" style="margin:0; font-weight:600;">
-                    GigabitEthernet0/1/0
-                </label>
-            </div>
+				<!-- ===== WAN PORT 0/1/0 ===== -->
+				<div>
+					<div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+						<input type="checkbox" id="wan0-enabled">
+						<label for="wan0-enabled" style="margin:0; font-weight:600;">
+							GigabitEthernet0/1/0
+						</label>
+					</div>
 
-            <div class="field">
-                <label>Provider</label>
-                <select>
-                    <option value="" disabled selected>Select provider</option>
-                    <option>Aureon</option>
-                    <option>CenturyLink</option>
-                    <option>Charter</option>
-                    <option>North</option>
-                    <option>East</option>
-                    <option>South</option>
-                    <option>West</option>
-                    <option>Central</option>
-                    <option>Local</option>
-                </select>
-            </div>
+					<div class="field">
+						<label>Provider</label>
+						<select>
+							<option value="" disabled selected>Select provider</option>
+							<option>Aureon</option>
+							<option>CenturyLink</option>
+							<option>Charter</option>
+							<option>North</option>
+							<option>East</option>
+							<option>South</option>
+							<option>West</option>
+							<option>Central</option>
+							<option>Local</option>
+						</select>
+					</div>
 
-            <div class="field">
-                <label>Description</label>
-                <input type="text">
-            </div>
+					<div class="field">
+						<label>Description</label>
+						<input type="text">
+					</div>
 
-            <div class="field">
-                <label>WAN Type</label>
-                <select>
-                    <option value="" disabled selected>Select type</option>
-                    <option>Fiber</option>
-                    <option>Copper</option>
-                    <option>Cellular</option>
-                </select>
-            </div>
+					<div class="field">
+						<label>WAN Type</label>
+						<select>
+							<option value="" disabled selected>Select type</option>
+							<option>Fiber</option>
+							<option>Copper</option>
+							<option>Cellular</option>
+						</select>
+					</div>
 
-            <div class="field">
-                <label>Bandwidth (Mbps)</label>
-                <input type="number">
-            </div>
+					<div class="field">
+						<label>Bandwidth (Mbps)</label>
+						<input type="number">
+					</div>
 
-            <div class="field">
-                <label>Shutdown</label>
-                <select>
-                    <option value="no shut">No Shut</option>
-                    <option value="shut">Shutdown</option>
-                </select>
-            </div>
-        </div>
+					<div class="field">
+						<label>Shutdown</label>
+						<select>
+							<option value="no shut">No Shut</option>
+							<option value="shut">Shutdown</option>
+						</select>
+					</div>
+				</div>
 
-        <!-- ===== WAN PORT 0/1/1 ===== -->
-        <div>
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                <input type="checkbox" id="wan1-enabled">
-                <label for="wan1-enabled" style="margin:0; font-weight:600;">
-                    GigabitEthernet0/1/1
-                </label>
-            </div>
+				<!-- ===== WAN PORT 0/1/1 ===== -->
+				<div>
+					<div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+						<input type="checkbox" id="wan1-enabled">
+						<label for="wan1-enabled" style="margin:0; font-weight:600;">
+							GigabitEthernet0/1/1
+						</label>
+					</div>
 
-            <div class="field">
-                <label>Provider</label>
-                <select>
-                    <option value="" disabled selected>Select provider</option>
-                    <option>Aureon</option>
-                    <option>CenturyLink</option>
-                    <option>Charter</option>
-                    <option>North</option>
-                    <option>East</option>
-                    <option>South</option>
-                    <option>West</option>
-                    <option>Central</option>
-                    <option>Local</option>
-                </select>
-            </div>
+					<div class="field">
+						<label>Provider</label>
+						<select>
+							<option value="" disabled selected>Select provider</option>
+							<option>Aureon</option>
+							<option>CenturyLink</option>
+							<option>Charter</option>
+							<option>North</option>
+							<option>East</option>
+							<option>South</option>
+							<option>West</option>
+							<option>Central</option>
+							<option>Local</option>
+						</select>
+					</div>
 
-            <div class="field">
-                <label>Description</label>
-                <input type="text">
-            </div>
+					<div class="field">
+						<label>Description</label>
+						<input type="text">
+					</div>
 
-            <div class="field">
-                <label>WAN Type</label>
-                <select>
-                    <option value="" disabled selected>Select type</option>
-                    <option>Fiber</option>
-                    <option>Copper</option>
-                </select>
-            </div>
+					<div class="field">
+						<label>WAN Type</label>
+						<select>
+							<option value="" disabled selected>Select type</option>
+							<option>Fiber</option>
+							<option>Copper</option>
+						</select>
+					</div>
 
-            <div class="field">
-                <label>Bandwidth (Kbps)</label>
-                <input type="number">
-            </div>
+					<div class="field">
+						<label>Bandwidth (Kbps)</label>
+						<input type="number">
+					</div>
 
-            <div class="field">
-                <label>Shutdown</label>
-                <select>
-                    <option value="no shut">No Shut</option>
-                    <option value="shut">Shutdown</option>
-                </select>
-            </div>
-        </div>
-
+					<div class="field">
+						<label>Shutdown</label>
+						<select>
+							<option value="no shut">No Shut</option>
+							<option value="shut">Shutdown</option>
+						</select>
+					</div>
+				</div>
+			</div>
+		</div>
 <!-- ================= VRF SECTION ================= -->
 		<div class="vrf-section">
-		<h3>VRFs</h3>
-		<table id="vrfTable">
-		<thead>
-			<tr>
-			<th>VRF</th>
-			<th>Default Gateway</th>
-			<th>Subnet Mask</th>
-			<th></th>
-			</tr>
-		</thead>
-		<tbody></tbody>
-		</table>
+			<h3>VRFs</h3>
+			<table id="vrfTable">
+			<thead>
+				<tr>
+				<th>VRF</th>
+				<th>Default Gateway</th>
+				<th>Subnet Mask</th>
+				<th></th>
+				</tr>
+			</thead>
+			<tbody></tbody>
+			</table>
 
-		<button id="addVrf">Add VRF</button>
+			<button id="addVrf">Add VRF</button>
 		</div>
+<!-- ================= PORTS SECTION ================= -->
+		<div class="ports-section section">
+			<h3>Ports</h3>
+
+			<!-- Port Selection -->
+			<div class="field" style="display: flex; align-items: left; gap: 8px; justify-content: flex-start;">
+				<select id="portSelect" style="width: 180px;">
+					<option value="">Select a port to add...</option>
+					<option value="Gi 0/0/0">Gi 0/0/0</option>
+					<option value="Gi 0/0/1">Gi 0/0/1</option>
+					<option value="Gi 0/0/2">Gi 0/0/2</option>
+					<option value="Gi 0/0/3">Gi 0/0/3</option>
+					<option value="Gi 0/0/4">Gi 0/0/4</option>
+					<option value="Gi 0/0/5">Gi 0/0/5</option>
+					<option value="Gi 0/0/6">Gi 0/0/6</option>
+					<option value="Gi 0/0/7">Gi 0/0/7</option>
+					<option value="Gi 0/0/8">Gi 0/0/8</option>
+					<option value="Gi 0/0/9">Gi 0/0/9</option>
+					<option value="Gi 0/0/10">Gi 0/0/10</option>
+					<option value="Gi 0/0/11">Gi 0/0/11</option>
+				</select>
+				<button id="addPort" style="width: 100px;">Add Port</button>
+			</div>
+
+			<!-- Ports Table -->
+			<table id="portTable">
+				<thead>
+					<tr>
+						<th>Port</th>
+						<th>Description</th>
+						<th>VRF</th>
+						<th>Media Type</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody></tbody>
+			</table>
+		</div>
+
+
 	</div>
 	
-    <!-- ================= RIGHT ================= -->
+    <!-- ================= RIGHT SIDE ================= -->
     <div class="right-pane">
         <div class="config-header">
             Generated Configuration
@@ -231,104 +272,8 @@
 
 </div>
 
-<script>
-const allVrfs = [
-  "2WR","AMI","FWBB","GAS","IPCAM","MGMT","PEER","PHYSEC","SUB"
-];
-
-const vrfMasks = {
-  "2WR": "255.255.255.240",
-  "AMI": "255.255.255.240",
-  "FWBB": "255.255.255.240",
-  "GAS": "255.255.255.248",
-  "IPCAM": "255.255.255.240",
-  "MGMT": "255.255.255.240",
-  "PEER": "255.255.255.248",
-  "PHYSEC": "255.255.255.248"
-};
-
-const tableBody = document.querySelector("#vrfTable tbody");
-const addBtn = document.getElementById("addVrf");
-
-function updateDropdowns() {
-  const selected = [...document.querySelectorAll(".vrf-select")]
-    .map(s => s.value)
-    .filter(v => v);
-
-  document.querySelectorAll(".vrf-select").forEach(sel => {
-    const current = sel.value;
-    sel.innerHTML =
-      `<option value="">Select...</option>` +
-      allVrfs
-        .filter(v => v === current || !selected.includes(v))
-        .map(v => `<option value="${v}">${v}</option>`)
-        .join("");
-    sel.value = current;
-  });
-}
-
-function handleVrfChange(select, maskCell) {
-  const vrf = select.value;
-  maskCell.innerHTML = "";
-
-  if (!vrf) return;
-
-  if (vrf === "SUB") {
-    maskCell.innerHTML = `
-      <select class="subnet-mask">
-        <option value="255.255.255.248">255.255.255.248</option>
-        <option value="255.255.255.240">255.255.255.240</option>
-        <option value="255.255.255.192">255.255.255.192</option>
-      </select>
-    `;
-  } else {
-    maskCell.innerHTML = `
-      <input type="text" value="${vrfMasks[vrf]}" readonly>
-    `;
-  }
-
-  updateDropdowns();
-}
-
-function addRow() {
-  const row = document.createElement("tr");
-
-  row.innerHTML = `
-    <td>
-      <select class="vrf-select">
-        <option value="">Select...</option>
-        ${allVrfs.map(v => `<option value="${v}">${v}</option>`).join("")}
-      </select>
-    </td>
-    <td>
-      <input type="text" placeholder="Default Gateway">
-    </td>
-    <td class="mask-cell"></td>
-    <td>
-      <button class="remove">✕</button>
-    </td>
-  `;
-
-  const vrfSelect = row.querySelector(".vrf-select");
-  const maskCell = row.querySelector(".mask-cell");
-  const removeBtn = row.querySelector(".remove");
-
-  vrfSelect.addEventListener("change", () =>
-    handleVrfChange(vrfSelect, maskCell)
-  );
-
-  removeBtn.addEventListener("click", () => {
-    row.remove();
-    updateDropdowns();
-  });
-
-  tableBody.appendChild(row);
-  updateDropdowns();
-}
-
-addBtn.addEventListener("click", addRow);
-</script>
-
+<script src="../static/vrf.js"></script>
+<script src="../static/ports.js"></script>
 
 </body>
 </html>

@@ -1,0 +1,174 @@
+    <style>
+        /* -------- Base -------- */
+        * {
+            box-sizing: border-box;
+            font-family: "Segoe UI", Roboto, sans-serif;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            background: #0f0f0f;
+            color: #e6e6e6;
+        }
+
+        /* -------- App Layout -------- */
+        .app-layout {
+            display: grid;
+            grid-template-columns: 650px 1fr;
+            height: 100vh;
+        }
+
+        /* -------- Left Pane -------- */
+        .left-pane {
+            padding: 16px;
+            overflow-y: auto;
+            background: #141414;
+        }
+
+        .section {
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 14px;
+        }
+
+        .section h2 {
+            margin: 0 0 10px;
+            font-size: 15px;
+            border-bottom: 1px solid #2a2a2a;
+            padding-bottom: 6px;
+        }
+		.vrf-section {
+			border: 1px solid #2a2a2a;
+			border-radius: 8px;
+			padding: 12px;
+			margin-bottom: 16px;
+			background: #161616;
+			border-bottom: 1px solid #2a2a2a;
+		}
+		/* -------- Ports Section -------- */
+		.ports-section {
+			border: 1px solid #2a2a2a;
+			border-radius: 8px;
+			padding: 12px;
+			margin-bottom: 16px;
+			background: #161616;
+		}
+
+		/* Table inside ports */
+		.ports-section table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-top: 10px;
+			border: none; /* remove outer table border */
+		}
+
+		.ports-section th, 
+		.ports-section td {
+			padding: 6px 8px;
+			text-align: left;
+			border-bottom: 1px solid #2a2a2a; /* subtle row separation */
+		}
+
+		.ports-section input[type="text"],
+		.ports-section select {
+			width: 100%;           /* Take full cell width */
+			box-sizing: border-box; /* Include padding in width */
+			background: #1c1c1c;
+			border: 1px solid #333;
+			border-radius: 4px;
+			color: #e6e6e6;
+			padding: 4px 6px;
+		}
+
+		#portTable td input,
+		#portTable td select {
+			width: 100%;
+			background: #1c1c1c;
+			border: 1px solid #333;
+			border-radius: 4px;
+			padding: 4px 6px;
+			color: #e6e6e6;
+		}
+		/* Add Port button */
+		.ports-section button#addPort {
+			background: #1976d2;
+			color: white;
+			border: none;
+			padding: 6px 12px;
+			border-radius: 4px;
+			cursor: pointer;
+			margin-top: 0px;
+		}
+		
+		.ports-section table th:first-child,
+		.ports-section table td:first-child {
+			white-space: nowrap;   /* Prevent line break */
+			max-width: 120px;      /* Optional: keep it compact */
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+		
+        /* Two-column core layout */
+        .core-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+        }
+
+        label {
+            font-size: 12px;
+            color: #bdbdbd;
+            margin-bottom: 4px;
+        }
+
+        input, select {
+            background: #1c1c1c;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 6px 8px;
+            color: #e6e6e6;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #4c8bf5;
+        }
+
+        /* -------- Right Pane -------- */
+        .right-pane {
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid #2a2a2a;
+            background: #0d0d0d;
+        }
+
+        .config-header {
+            padding: 10px 14px;
+            font-weight: 600;
+            border-bottom: 1px solid #2a2a2a;
+            background: #111;
+        }
+
+        .config-output {
+            flex: 1;
+            width: 100%;
+            resize: none;
+            border: none;
+            outline: none;
+            padding: 12px;
+            font-family: Consolas, monospace;
+            font-size: 13px;
+            line-height: 1.45;
+            background: #0d0d0d;
+            color: #e6e6e6;
+            white-space: pre;
+        }
+    </style>

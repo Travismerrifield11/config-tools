@@ -49,6 +49,7 @@
                             <option value="12">12</option>
                         </select>
                     </div>
+					
                 </div>
 
                 <!-- RIGHT COLUMN -->
@@ -81,6 +82,10 @@
                         </select>
                     </div>
                 </div>
+				
+				<div class="section-footer">
+					<button type="button" id="generate-core">Generate Core</button>
+				</div>
 
             </div>
         </div>
@@ -144,6 +149,7 @@
 							<option value="shut">Shutdown</option>
 						</select>
 					</div>
+					
 				</div>
 
 				<!-- ===== WAN PORT 0/1/1 ===== -->
@@ -198,6 +204,11 @@
 						</select>
 					</div>
 				</div>
+				
+				<div class="section-footer">
+					<button type="button" id="generate-wan">Generate WAN</button>
+				</div>
+		
 			</div>
 		</div>
 <!-- ================= VRF SECTION ================= -->
@@ -233,6 +244,11 @@
 				</thead>
 				<tbody></tbody>
 			</table>
+			
+			<div class="section-footer">
+				<button type="button" id="generate-vrf">Generate VRF</button>
+			</div>
+			
 		</div>
 
 <!-- ================= PORTS SECTION ================= -->
@@ -259,9 +275,15 @@
 			</thead>
 			<tbody></tbody>
 		  </table>
+		  
+		<div class="section-footer">
+			<button type="button" id="generate-ports">Generate Ports</button>
+		</div>  
+		
 		</div>
 
 
+		
 	</div>
 	
     <!-- ================= RIGHT SIDE ================= -->
@@ -269,16 +291,37 @@
         <div class="config-header">
             Generated Configuration
         </div>
-
-        <textarea class="config-output" id="config-output" spellcheck="false">
+		
+		<div class="config-section-toggles">
+			<label>
+				<input type="checkbox" id="toggle-core" checked>
+				Core
+			</label>
+			<label>
+				<input type="checkbox" id="toggle-wan" checked>
+				WAN
+			</label>
+			<label>
+				<input type="checkbox" id="toggle-vrf" checked>
+				VRF
+			</label>
+			<label>
+				<input type="checkbox" id="toggle-ports" checked>
+				Ports
+			</label>
+		</div>
+			<textarea class="config-output" id="config-output" spellcheck="false">
 ! Configuration preview will appear here
         </textarea>
     </div>
 
 </div>
 
-<script src="../static/vrf.js"></script>
+
+<script type="../static/vrf.js"></script>
 <script src="../static/ports.js"></script>
+<script type="../module" src="generator.js"></script>
+<script src="../static/config_area.js"></script>
 
 </body>
 </html>

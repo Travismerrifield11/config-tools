@@ -1,101 +1,77 @@
+// generator.js
 from jinja2 import Environment, FileSystemLoader
-from all_models import CoreNetwork, WANConfig, VRFConfig, PortConfig
+import { renderIr8340Core } from "./templates/ir8340_core.js";
 
-# Initialize Jinja2 environment
-env = Environment(
-    loader=FileSystemLoader("templates"),
-    trim_blocks=True,
-    lstrip_blocks=True
-)
 
-# =========================
-# Core Network Generator
-# =========================
-def generate_core_config(core: CoreNetwork) -> str:
+env = Environment(loader=FileSystemLoader("templates"))
+template = env.get_template("ir8340_core.j2")
+
+def generate_core_config(data):
+    return template.render(**data)
+
+def generate_wan_config(data):
     """
-    Generates the Core Network configuration (hostname, loopbacks, etc.)
+    data: list of dicts with keys circuit, ip, bandwidth, media_type
+    Returns a string of WAN configs
     """
-    template = env.get_template("ir8340_core.j2")
-    return template.render(core=core)
-
-
-# =========================
-# WAN Generator
-# =========================
-def generate_wan_config(core: CoreNetwork, wan: WANConfig) -> str:
+    config_lines = ["! WAN Configuration"]
+    for wan in data:
+        circuit = wan.get("circuit","")
+        ip = wan.get("ip","")
+        bandwidth = wan.get("bandwidth","")
+        media = wan.get("media_type","")
+        config_lines.append(f"interface {circuit}")
+        if ip:
+            config_lines.append(f" ip address {ip} 255.255.255.0")
+        if bandwidth:
+            config_lines.append(f" bandwidth {bandwidth}")
+        if media:
+            config_lines.append(f" media-type {media}")
+        config_lines.append("!")
+    return "\n".join(config_lines)
+	
+def generate_vrf_config(data):
     """
-    Generates WAN configuration based on provider
+    data: list of dicts with keys name, rd, rt
+    Returns string of VRF configs
     """
-    if wan.provider.lower() == "aureon":
-        template = env.get_template("WANs/aureon.j2")
-    elif wan.provider.lower() == "centurylink":
-        template = env.get_template("WANs/centurylink.j2")
-    elif wan.provider.lower() == "charter":
-        template = env.get_template("WANs/charter.j2")
-    elif wan.provider.lower() == "north":
-        template = env.get_template("WANs/north.j2")        
-    elif wan.provider.lower() == "east":
-        template = env.get_template("WANs/east.j2")        
-    elif wan.provider.lower() == "south":
-        template = env.get_template("WANs/south.j2")
-    elif wan.provider.lower() == "west":
-        template = env.get_template("WANs/west.j2")     
-    elif wan.provider.lower() == "central":
-        template = env.get_template("WANs/central.j2")    
-    elif wan.provider.lower() == "local":
-        template = env.get_template("WANs/local.j2")                
-    else:
-        raise ValueError(f"Unsupported WAN provider: {wan.provider}")
+    config_lines = ["! VRF Configuration"]
+    for vrf in data:
+        name = vrf.get("name","")
+        rd = vrf.get("rd","")
+        rt = vrf.get("rt","")
+        if name:
+            config_lines.append(f"vrf {name}")
+            if rd:
+                config_lines.append(f" rd {rd}")
+            if rt:
+                config_lines.append(f" route-target export {rt}")
+                config_lines.append(f" route-target import {rt}")
+            config_lines.append("!")
+    return "\n".join(config_lines)
 
-    return template.render(core=core, wan=wan)
-    
-    
-# =========================
-# VRF Generator
-# =========================
-
-def generate_vrf_config(core: CoreNetwork, vrf: VRFConfig):
+def generate_ports_config(data):
     """
-    Generates VRF configuration.
+    data: list of dicts with keys interface, ip, description, media_type
     """
-    network_name = vrf.network.lower()
-
-    if network_name == "2wr":
-        template = env.get_template("VRFs/2WR.j2")
-    elif network_name == "ami":
-        template = env.get_template("VRFs/ami.j2")
-    elif network_name == "fwbb":
-        template = env.get_template("VRFs/fwbb.j2")
-    elif network_name == "gas":
-        template = env.get_template("VRFs/gas.j2")
-    elif network_name == "ipcam":
-        template = env.get_template("VRFs/ipcam.j2")
-    elif network_name == "mgmt":
-        template = env.get_template("VRFs/mgmt.j2")
-    elif network_name == "peer":
-        template = env.get_template("VRFs/peer.j2")
-    elif network_name == "security":
-        template = env.get_template("VRFs/physec.j2")
-    elif network_name == "sub":
-        template = env.get_template("VRFs/sub.j2")
-    else:
-        raise ValueError(f"Unsupported VRF network type: {vrf.network}")
-
-    return template.render(core=core, vrf=vrf)
+    config_lines = ["! Ports Configuration"]
+    for port in data:
+        intf = port.get("interface","")
+        ip = port.get("ip","")
+        desc = port.get("description","")
+        media = port.get("media_type","")
+        if intf:
+            config_lines.append(f"interface {intf}")
+            if ip:
+                config_lines.append(f" ip address {ip} 255.255.255.0")
+            if desc:
+                config_lines.append(f" description {desc}")
+            if media:
+                config_lines.append(f" media-type {media}")
+            config_lines.append("!")
+    return "\n".join(config_lines)
 
 
-# =========================
-# Port Generator
-# =========================
-def generate_port_config(port: PortConfig) -> str:
-    """
-    Generates switch port configuration.
-    """
-    template = env.get_template("ir8340_ports.j2")
-    return template.render(port=port)
-
-# =========================
-# Full Configuration Generator
-# =========================
-
-
+export function generateCoreConfig(coreData) {
+    return renderIr8340Core(coreData);
+}

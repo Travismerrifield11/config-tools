@@ -48,6 +48,7 @@ async function fetchSection(endpoint, payload) {
 
 // ====================== CORE ======================
 document.getElementById("generate-core")?.addEventListener("click", async () => {
+	console.log("VRF JS loaded and DOM ready"); // <-- check if script runs
     const payload = {
         hostname: document.getElementById("hostname")?.value.trim(),
         loopback0: document.getElementById("loopback0")?.value.trim(),
@@ -94,32 +95,122 @@ document.getElementById("generate-wan")?.addEventListener("click", async () => {
     }
 });
 
-// ====================== VRF ======================
-function collectVrfData() {
-    const rows = document.querySelectorAll("#vrf-table tbody tr");
-    const data = [];
+// ================= VRF SECTION =================
+document.addEventListener("DOMContentLoaded", () => {
+console.log("VRF JS loaded and DOM ready"); // <-- check if script runs
 
-    rows.forEach(row => {
-        const name = row.querySelector(".vrf-name")?.value;
-        const rd = row.querySelector(".vrf-rd")?.value;
-        const rt = row.querySelector(".vrf-rt")?.value;
+    // Add VRF
+    document.getElementById("addVrf").addEventListener("click", () => {
+        const select = document.getElementById("vrfSelect");
+        const vrfName = select.value.trim();
 
-        if (name || rd || rt) {
-            data.push({ name, rd, rt });
+        if (!vrfName) {
+            alert("Please select a VRF to add.");
+            return;
         }
+
+        const tableBody = document.querySelector("#vrfTable tbody");
+
+        // Prevent duplicate VRFs
+        if (Array.from(tableBody.querySelectorAll("tr")).some(row => row.dataset.vrf === vrfName)) {
+            alert(`VRF ${vrfName} has already been added.`);
+            return;
+        }
+
+        const row = document.createElement("tr");
+        row.dataset.vrf = vrfName;
+
+        // Determine subnet mask input type
+        let subnetField = "";
+        const readonlyVrfs = ["2WR", "AMI", "FWBB", "GAS", "IPCAM", "MGMT", "PEER", "PHYSEC"];
+        if (readonlyVrfs.includes(vrfName)) {
+            // Fixed subnet mask input
+            subnetField = `<input type="text" class="vrf-subnetmask" value="255.255.255.240" readonly>`;
+        } else if (vrfName === "SUB") {
+            // Dropdown select for subnet mask
+            subnetField = `
+                <select class="subnet-mask">
+                    <option value="255.255.255.248">255.255.255.248</option>
+                    <option value="255.255.255.240" selected>255.255.255.240</option>
+                    <option value="255.255.255.192">255.255.255.192</option>
+                </select>
+            `;
+        } else {
+            // Default to read-only 255.255.255.240
+            subnetField = `<input type="text" class="vrf-subnetmask" value="255.255.255.240" readonly>`;
+        }
+
+        row.innerHTML = `
+            <td>${vrfName}</td>
+            <td><input type="text" class="vrf-default-gateway" placeholder="Default Gateway"></td>
+            <td>${subnetField}</td>
+            <td><button class="btn-remove">Remove</button></td>
+        `;
+
+        tableBody.appendChild(row);
+
+        // Remove button
+        row.querySelector(".btn-remove").addEventListener("click", () => row.remove());
+
+        // Reset dropdown
+        select.value = "";
     });
 
-    return data;
-}
+    // Collect VRF data from table
+    function collectVrfData() {
+        return Array.from(document.querySelectorAll("#vrfTable tbody tr"))
+            .map(row => {
+                const gatewayInput = row.querySelector(".vrf-default-gateway");
+                if (!gatewayInput || !gatewayInput.value.trim()) return null;
 
-document.getElementById("generate-vrf")?.addEventListener("click", async () => {
-    try {
-        window.configVrf = await fetchSection("/generate/vrf", collectVrfData());
-        updateConfigOutput();
-    } catch (err) {
-        alert(err.message);
+                // Determine subnet mask
+                let subnetmask = row.querySelector(".vrf-subnetmask")?.value.trim();
+                if (!subnetmask) {
+                    subnetmask = row.querySelector(".subnet-mask")?.value;
+                }
+                subnetmask = subnetmask || "255.255.255.240";
+
+                return {
+                    network: row.dataset.vrf,
+                    default_gateway: gatewayInput.value.trim(),
+                    subnetmask
+                };
+            })
+            .filter(vrf => vrf); // Remove rows missing default gateway
     }
+
+    // Generate VRF
+	document.getElementById("generate-vrf").addEventListener("click", () => {
+    const vrfs = collectVrfData();
+
+    console.log("=== VRFs collected ===");
+    console.log(vrfs);
+
+    if (!vrfs.length) {
+        alert("Please enter a default gateway for every VRF.");
+        return;
+    }
+
+    console.log("Sending VRF payload to backend...");
+    fetch("/update_vrf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(vrfs)
+    })
+    .then(res => res.json())
+    .then(data => {
+        console.log("Response from backend:", data);
+        updateConfigOutput(data);
+    })
+    .catch(err => console.error("Error generating VRFs:", err));
 });
+});
+
+
+
+
+
+
 
 // ====================== PORTS ======================
 function collectPortsData() {

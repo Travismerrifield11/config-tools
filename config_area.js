@@ -1,5 +1,5 @@
 // ===================== CONFIG AREA SCRIPT =====================
-
+document.addEventListener("DOMContentLoaded", () => {
 // --------------------- Memory Storage ---------------------
 window.configCore = "";
 window.configWan = "";
@@ -152,4 +152,5 @@ document.getElementById("generate-ports")?.addEventListener("click", async () =>
     } catch (err) {
         alert(err.message);
     }
+});
 });

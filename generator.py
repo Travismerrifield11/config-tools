@@ -33,19 +33,12 @@ def generate_wan_config(wans: list[WANConfig]) -> str:
 
 
 # =========================
-# VRF Section Generator (list)
+# VRF Section Generator
 # =========================
-def generate_vrf_config(vrfs: list[VRFConfig]) -> str:
-    section_text = ""
-    for vrf in vrfs:
-        network_name = vrf.network.lower()
-        # pick the VRF template
-        try:
-            template = env.get_template(f"VRFs/{network_name}.j2")
-        except Exception:
-            raise ValueError(f"No template for VRF '{vrf.network}'")
-        section_text += template.render(vrf=vrf) + "\n"
-    return section_text.strip()
+def generate_vrf_config(core, vrf, template_name):
+    env = Environment(loader=FileSystemLoader("Templates"))  # base folder
+    template = env.get_template(f"IPL/VRFs/{template_name}")   # relative path inside Templates
+    return template.render(core=core, vrf=vrf)
 
 
 # =========================
